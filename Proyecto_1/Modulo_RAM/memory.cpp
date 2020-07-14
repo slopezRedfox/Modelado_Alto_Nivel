@@ -1,41 +1,41 @@
 //-----------------------------------------------------
 #include "systemc.h"
 
-SC_MODULE (ram) {
- 
+#define DATA_WIDTH    32
+#define ADDR_WIDTH    15
+#define BLOCK_WIDTH   3
+
+SC_MODULE (ram_sp_ar_aw) {
+  sc_in    <sc_uint<ADDR_WIDTH> > address ;
+  sc_in    <bool>                 cs      ;
+  sc_in    <bool>                 we      ;
+  sc_in    <bool>                 oe      ;
+  sc_in    <sc_uint<DATA_WIDTH> > data_in ;
+  sc_out   <sc_uint<DATA_WIDTH> > data_out;
+
   //-----------Internal variables-------------------
-  int * mem;
-  int data;
-  int address;
-  sc_event rd_t, wr_t;
-  
-  // Constructor for memory
-  //SC_CTOR(ram) {
-  SC_HAS_PROCESS(ram);
-    ram(sc_module_name ram, int size=8) {
-    mem = new int [size];
-    SC_THREAD(wr);
-         
-  } // End of Constructor
+  sc_uint <DATA_WIDTH> mem [RAM_DEPTH];
 
-   //------------Code Starts Here-------------------------
-  void write(int addr, int dat) {
-    data = dat;
-    address = addr;
-    wr_t.notify(2, SC_NS);
-  }  
-  
-  int read(int address) {
-    data = mem [address];
-    return data;
-  }  
-
-  void wr() {
-    while(true) {
-      wait(wr_t);
-      mem [address] = data;
-    }  
+  // Memory Write Block 
+  Write Operation : When we = 1, cs = 1
+  void write_mem () {
+    if (cs.read() && we.read()) {
+      mem[address.read()] = data_in.read();
+    }
   }
 
-  
-}; // End of Module memory
+  // Memory Read Block 
+  // Read Operation : When we = 0, oe = 1, cs = 1
+  void read_mem () {
+    if (cs.read() && !we.read() && oe.read())  {
+      data_out.write(mem[address.read()]);
+    }
+  }
+
+  SC_CTOR(ram_sp_ar_aw) {
+    SC_METHOD (read_mem);
+    sensitive << address << cs << we << oe;
+    SC_METHOD (write_mem);
+    sensitive << address << cs << we << data_in;
+  }
+};
