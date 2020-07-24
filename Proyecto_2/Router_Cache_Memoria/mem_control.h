@@ -30,17 +30,17 @@ struct ID_extension: tlm::tlm_extension<ID_extension> {
   unsigned int transaction_id;
 };
 
-// Initiator module generating generic payload transactions   
-struct Initiator: sc_module {
+// Controler module generating generic payload transactions   
+struct Controler: sc_module {
   
   // TLM2 socket, defaults to 32-bits wide, generic payload, generic DMI mode   
-  tlm_utils::simple_initiator_socket<Initiator> socket;
+  tlm_utils::simple_initiator_socket<Controler> socket;
 
   // Construct and name socket
-  SC_CTOR(Initiator) : socket("socket"){
+  SC_CTOR(Controler) : socket("socket"){
        
     // Se tiene una funcion de iniciador
-    socket.register_nb_transport_bw(this, &Initiator::nb_transport_bw);
+    socket.register_nb_transport_bw(this, &Controler::nb_transport_bw);
     
     //Se tiene una funcion recurrente
     SC_THREAD(thread_process);   
@@ -229,6 +229,16 @@ struct Initiator: sc_module {
           //                              offset
           //  |      tag        |  index    | |
     addrs  =0b000000000000000011000000000000000;
+    do_t.notify();
+    wait(done_t);
+    cout << endl;
+    cout << endl;
+
+    comando = 0;
+    data    = 0x0000000C;
+          //                              offset
+          //  |      tag        |  index    | |
+    addrs  =0b000001000000000011000000000000000;
     do_t.notify();
     wait(done_t);
     cout << endl;

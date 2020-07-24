@@ -1,6 +1,72 @@
 #ifndef TARGET_H
 #define TARGET_H
 
+/*
+Modulo 
+Tiempo de acceso de 8 ciclos
+Cache L2 de 512KB 8-way set-associative
+Tiempo de acceso tipico es de 5-25ns
+
+Frecuencia = 600 MHz
+
+        Input                   Output
+                 ____________   
+                 |          |-- flag
+        r_w    --|          |   Pos/Neg (1bit)
+      (1 bits)   | Cache L2 |
+                 |   512KB  |   
+        adress --|          |-- data 
+      ( 32bits)  |          |   (32 bit)
+                 |          |   
+          on   --|          | 
+       ( 1bit)   |          |   
+                 |          |
+                 |          |
+                 |__________|   
+
+Data   = Es un in/out donde se leen/escriben los datos de tamaño de 8 bits
+Adress = Es la dirección del disco duro donde están los datos deseados (bus de 8 bits)
+on     = Apaga/Enciende el modulo.
+Reset  = Reinicia/Limpia la memoria.
+r_w    = Indica si se desea Leer o Escribir datos en la Cache (1 = Leer / 0 = Escribir)
+Flag   = Indica si el dato que se desea leer se encuentra o no en la Cache.
+         (0 = Dato se encuentara en cache / 1 = Dato NO se encuentara en cache)
+
+¿Eventos del modulo?
+Se deben considerar los tiempos de ejecucion de:
+
+- Tiempo de lectura de datos
+- Tiempo de escritura
+- Tiempo de miss (100-300 ciclos)
+- Tiempo de hit  (5-12 ciclos)
+- Tiempo de borrado de datos
+- Tiempo de escritura con memoria llena
+- Tiempo de lectura con memoria llena
+- Timpo de refrescamiento
+
+------------------------------------------------------------------------------------------
+Se divide en 2^12 sets de memoria de 8 bloques de memoria cada uno y en cada bloque hay 
+4 lineas de 32bits (16 bytes). Por lo que la maya de cache queda como:
+
+OFFSET = 2  bits
+INDEX  = 12 bits
+TAG    = 18 bits
+
+8 bloques * 4 lineas de 32 bits = 128 bytes
+128 bytes * 2^12 Sets           = 524288 bytes = 512KB
+
+
+Entonces, el direccionamiento en cache quedaria de la siguiete manera:
+ ______________________________________
+|                 |           |        |
+|                 |           |        |
+|       TAG       |   INDEX   | OFFSET |
+|    (18 Bits)    | (12 Bits) |(2 Bits)|
+|                 |           |        |
+|_________________|___________|________|
+
+*/
+
 // Needed for the simple_target_socket
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 
@@ -14,9 +80,6 @@ using namespace std;
 #include "tlm_utils/simple_initiator_socket.h"
 
 
-//Constantes de memoria original
-#define SIZE 16
-
 //Constantes de memoria cache
 #define wr_delay 5
 #define rd_delay 2
@@ -24,9 +87,12 @@ using namespace std;
 #define cln_delay 5
 #define pen_delay 100
 
-#define sets_n 1
+#define sets_n 4
 #define ways_n 8
-#define block_n 1
+#define block_n 4096
+
+//----------------------------------------------------------------------------------------------------------------------
+//Clases usadas para memoria cache
 
 //Cada bloque cotiene 4 lineas de 32bits (4 bytes cada una)
 class Cache_Block {
@@ -51,23 +117,21 @@ class mem_cache {
     Cache_Set sets[sets_n];
 };
 
-// Target module representing a simple memory      
-struct Memory: sc_module {   
+
+
+//----------------------------------------------------------------------------------------------------------------------
+//Modulo de cache
+
+struct Cache: sc_module {   
   
-  // TLM-2 socket, defaults to 32-bits wide, base protocol
-  tlm_utils::simple_target_socket<Memory> socket;
-  
-  //PREGUNTA: ????
+  tlm_utils::simple_target_socket<Cache> socket;
   const sc_time LATENCY;   
   
   //Se declara el constructor y se establece la latencia a 10ns
-  SC_CTOR(Memory) : socket("socket"), LATENCY(10, SC_NS){
+  SC_CTOR(Cache) : socket("socket"), LATENCY(10, SC_NS){
 
     // Register callbacks for incoming interface method calls
-    socket.register_nb_transport_fw(this, &Memory::nb_transport_fw);
-
-    // Se inicializa la memoria, con valores 0
-    //for (int i = 0; i < SIZE; i++) mem[i] = 0x00000000;   
+    socket.register_nb_transport_fw(this, &Cache::nb_transport_fw);
 
     //Se establece una funcion recurente
     SC_THREAD(thread_process);   
@@ -75,20 +139,15 @@ struct Memory: sc_module {
     SC_THREAD(rd);
   }
 
-  // *********************************************   
-  // Thread to call nb_transport on backward path   
-  // ********************************************* 
-   
+  //==============================================================================================
   void thread_process(){
     
     while (true) {
     
-      // Wait for an event to pop out of the back end of the queue   
+      // wait
       wait(e1); 
-      //printf("ACCESING MEMORY\n");
    
-      tlm::tlm_phase phase;   
-      
+      tlm::tlm_phase phase;
       ID_extension* id_extension = new ID_extension;
       trans_pending->get_extension( id_extension ); 
       
@@ -105,7 +164,6 @@ struct Memory: sc_module {
       unsigned int     wid = trans_pending->get_streaming_width();   
 
       //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-      //if (adr >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 4)
       if (byt != 0 || wid != 0 || len > 4)   
         SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
       
@@ -127,6 +185,10 @@ struct Memory: sc_module {
         address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
         read();
         wait(done_t);
+
+        if (flag == 1){
+          trans_pending->set_address( 0xF00000000);
+        }
       }
 
       else if ( cmd == tlm::TLM_WRITE_COMMAND ){
@@ -147,7 +209,6 @@ struct Memory: sc_module {
       status = socket->nb_transport_bw( *trans_pending, phase, delay_pending );   
 
       switch (status)     
-      //case tlm::TLM_REJECTED:   
         case tlm::TLM_ACCEPTED:   
           
           wait( sc_time(10, SC_NS) );          
@@ -155,11 +216,11 @@ struct Memory: sc_module {
           phase = tlm::END_RESP;
           
           socket->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
-        //break;
       
+
       //********************************************************************************
+      //                     SOLO SE USA PARA PRUEBAS DE LA CACHE
       //********************************************************************************
-      //Solo para test de memoria cache
       cout << endl;
       cout << "index: " << index << "| offset: " << offset << endl;
       cout << endl;
@@ -173,6 +234,8 @@ struct Memory: sc_module {
     }   
   }   
   
+  //==============================================================================================
+
   // TLM2 non-blocking transport method
   //
   // Se igresan tres variables:
@@ -249,10 +312,7 @@ struct Memory: sc_module {
     }
   }
   
-  //*****************************************************************************************************
-  //*****************************************************************************************************
-  //*****************************************************************************************************
-  //*****************************************************************************************************
+  //==============================================================================================
 
   void write() {
     wr_t.notify(wr_delay, SC_NS);
@@ -342,9 +402,18 @@ struct Memory: sc_module {
           //dato fuera de la cache
           else if(i == ways_n - 1){
             flag = 1;
-            data = 0;
+            data_aux = mem.sets[index].block[6].data[offset];
+            memcpy(data, &data_aux, 4);
             wait(pen_delay,SC_NS);
           }
+        }
+
+        else {
+          flag = 1;
+          data_aux = 0;
+          memcpy(data, &data_aux, 4);
+          wait(pen_delay,SC_NS);
+          break;
         }
       }
 
@@ -360,7 +429,7 @@ struct Memory: sc_module {
   sc_event done_t;
   int data_aux;
   
-  //No se modifican
+  //
   mem_cache mem;
   sc_event wr_t, rd_t;
   sc_uint<32> address;
