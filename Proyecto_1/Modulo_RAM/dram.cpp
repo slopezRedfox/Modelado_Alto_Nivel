@@ -25,6 +25,9 @@
 #define BLCK_WIDTH     3
 #define ROW_SIZE   16384
 #define COL_SIZE     128
+#define rd_delay      10
+#define wr_delay      10
+#define burst_delay    1
 
 // Una ram esta compuesta por dos memorias de tipo
 // DDR3 de 128 Mbit x 16
@@ -42,7 +45,7 @@ SC_MODULE (dram) {
   int b_address;
   int cas;
   int ras;
-  sc_event rd_t, wr_t;
+  sc_event wr_t;
 
   // Constructor
   SC_HAS_PROCESS(dram);
@@ -73,6 +76,7 @@ SC_MODULE (dram) {
           for(int i = 0; i < 4; i++){
             mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0] = data.range(7,0);
             rem.data[address.range(14,0)+i][address.range(7,0)][b_address][1] = data.range(15,8);
+            wait(burst_delay);
           }
       }
       // Se escriben 8 datos seguidos
@@ -80,38 +84,48 @@ SC_MODULE (dram) {
         for(int i = 0; i < 8; i++){
           mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0] = data.range(7,0);
           rem.data[address.range(14,0)+i][address.range(7,0)][b_address][1] = data.range(15,8);
+          wait(burst_delay);
         }
       }
     }
   }
 
-  int rd(int addr, int blck){
-    int data_out;
-    address = addr;
-    b_address = b
-    // Se lee solo 1 dato
-    if(address[10] == 0){
-      data_out.range(7,0) = mem.data[address.range(14,0)][address.range(7,0)][b_address][0];
-      data_out.range(15,8) = mem.data[address.range(14,0)][address.range(7,0)][b_address][1];
-      return data_out;
-    }
-    // Se leen 4 datos en rafaga
-    else if((ddress[10] == 1)&&(address[12] == 0)){
-      for(int i = 0; i < 4; i++){
-        data_out.range(7,0) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0];
-        data_out.range(15,8) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][1];
-        return data_out;
-        wait(burst_delay);
-      }
-    }
-    // Se leen 8 datos en rafaga
-    else if((ddress[10] == 1)&&(address[12] == 1)){
-      for(int i = 0; i < 8; i++){
-        data_out.range(7,0) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0];
-        data_out.range(15,8) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][1];
-        return data_out;
-        wait(burst_delay);
-      }
-    }
 
+  void read(int addr, int blck){
+    address = addr;
+    b_address = blck;
+    rd_t.notify(rd_delay, SC_NS);
+  }
+
+
+  int rd(){
+    while(true){
+      int data_out;
+      address = addr;
+      b_address = b
+      // Se lee solo 1 dato
+      if(address[10] == 0){
+        data_out.range(7,0) = mem.data[address.range(14,0)][address.range(7,0)][b_address][0];
+        data_out.range(15,8) = mem.data[address.range(14,0)][address.range(7,0)][b_address][1];
+        return data_out;
+      }
+      // Se leen 4 datos en rafaga
+      else if((ddress[10] == 1)&&(address[12] == 0)){
+        for(int i = 0; i < 4; i++){
+          data_out.range(7,0) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0];
+          data_out.range(15,8) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][1];
+          return data_out;
+          wait(burst_delay);
+        }
+      }
+      // Se leen 8 datos en rafaga
+      else if((ddress[10] == 1)&&(address[12] == 1)){
+        for(int i = 0; i < 8; i++){
+          data_out.range(7,0) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][0];
+          data_out.range(15,8) = mem.data[address.range(14,0)+i][address.range(7,0)][b_address][1];
+          return data_out;
+          wait(burst_delay);
+        }
+      }
+    }
   };  // Final del modulo
