@@ -1,71 +1,5 @@
-#ifndef TARGET_H
-#define TARGET_H
-
-/*
-Modulo 
-Tiempo de acceso de 8 ciclos
-Cache L2 de 512KB 8-way set-associative
-Tiempo de acceso tipico es de 5-25ns
-
-Frecuencia = 600 MHz
-
-        Input                   Output
-                 ____________   
-                 |          |-- flag
-        r_w    --|          |   Pos/Neg (1bit)
-      (1 bits)   | Cache L2 |
-                 |   512KB  |   
-        adress --|          |-- data 
-      ( 32bits)  |          |   (32 bit)
-                 |          |   
-          on   --|          | 
-       ( 1bit)   |          |   
-                 |          |
-                 |          |
-                 |__________|   
-
-Data   = Es un in/out donde se leen/escriben los datos de tamaño de 8 bits
-Adress = Es la dirección del disco duro donde están los datos deseados (bus de 8 bits)
-on     = Apaga/Enciende el modulo.
-Reset  = Reinicia/Limpia la memoria.
-r_w    = Indica si se desea Leer o Escribir datos en la Cache (1 = Leer / 0 = Escribir)
-Flag   = Indica si el dato que se desea leer se encuentra o no en la Cache.
-         (0 = Dato se encuentara en cache / 1 = Dato NO se encuentara en cache)
-
-¿Eventos del modulo?
-Se deben considerar los tiempos de ejecucion de:
-
-- Tiempo de lectura de datos
-- Tiempo de escritura
-- Tiempo de miss (100-300 ciclos)
-- Tiempo de hit  (5-12 ciclos)
-- Tiempo de borrado de datos
-- Tiempo de escritura con memoria llena
-- Tiempo de lectura con memoria llena
-- Timpo de refrescamiento
-
-------------------------------------------------------------------------------------------
-Se divide en 2^12 sets de memoria de 8 bloques de memoria cada uno y en cada bloque hay 
-4 lineas de 32bits (16 bytes). Por lo que la maya de cache queda como:
-
-OFFSET = 2  bits
-INDEX  = 12 bits
-TAG    = 18 bits
-
-8 bloques * 4 lineas de 32 bits = 128 bytes
-128 bytes * 2^12 Sets           = 524288 bytes = 512KB
-
-
-Entonces, el direccionamiento en cache quedaria de la siguiete manera:
- ______________________________________
-|                 |           |        |
-|                 |           |        |
-|       TAG       |   INDEX   | OFFSET |
-|    (18 Bits)    | (12 Bits) |(2 Bits)|
-|                 |           |        |
-|_________________|___________|________|
-
-*/
+#ifndef RAM_H
+#define RAM_H
 
 // Needed for the simple_target_socket
 #define SC_INCLUDE_DYNAMIC_PROCESSES
@@ -78,69 +12,46 @@ using namespace std;
 #include "tlm.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/simple_initiator_socket.h"
-
+#include <queue>
 
 //Constantes de memoria cache
-#define wr_delay 5
-#define rd_delay 2
-#define wr_miss_delay 2
-#define cln_delay 5
-#define pen_delay 100
-
-#define sets_n 4
-#define ways_n 8
-#define block_n 4096
+#define SIZE 16 //512000000
+#define wr_delay_ram 15
+#define rd_delay_ram 10
 
 //----------------------------------------------------------------------------------------------------------------------
-//Clases usadas para memoria cache
+//Modulo de Ram
 
-//Cada bloque cotiene 4 lineas de 32bits (4 bytes cada una)
-class Cache_Block {
-  public:
-    sc_uint <32> data[block_n];
-    sc_uint <18> tag[block_n];
-
-    short order[block_n];
-    bool use[block_n];
-};
-
-//Cada set contiene 8 bloques, ya que es un 8 ways
-//Como es asociativa
-class Cache_Set {
-  public:
-    Cache_Block  block[ways_n];
-};
-
-//En la memoria cache hay 4096 Sets
-class mem_cache {
-  public:     
-    Cache_Set sets[sets_n];
-};
-
-
-
-//----------------------------------------------------------------------------------------------------------------------
-//Modulo de cache
-
-struct Cache: sc_module {   
+struct Ram: sc_module {   
   
-  tlm_utils::simple_target_socket<Cache> socket;
+  tlm_utils::simple_initiator_socket<Ram> socket_initiator;
+  tlm_utils::simple_target_socket<Ram> socket_target;
   const sc_time LATENCY;   
   
   //Se declara el constructor y se establece la latencia a 10ns
-  SC_CTOR(Cache) : socket("socket"), LATENCY(10, SC_NS){
-
+  SC_CTOR(Ram) : 
+    socket_target("socket_target"), 
+    socket_initiator("socket_initiator"),
+    LATENCY(10, SC_NS)
+  {
     // Register callbacks for incoming interface method calls
-    socket.register_nb_transport_fw(this, &Cache::nb_transport_fw);
+    socket_target.register_nb_transport_fw(this, &Ram::nb_transport_fw);
+    socket_initiator.register_nb_transport_bw(this, &Ram::nb_transport_bw);
 
     //Se establece una funcion recurente
-    SC_THREAD(thread_process);   
+    SC_THREAD(thread_process_to_bw);
+    SC_THREAD(thread_process_to_fw);
     SC_THREAD(wr);
     SC_THREAD(rd);
   }
 
   //==============================================================================================
-  void thread_process(){
+  //                                   FUNCIONES DE TARGET
+  //==============================================================================================
+
+  // Thread Iniciador
+  //----------------------------------------------------------------------------------------------
+  void thread_process_to_fw(){
     
     while (true) {
     
@@ -164,7 +75,7 @@ struct Cache: sc_module {
       unsigned int     wid = trans_pending->get_streaming_width();   
 
       //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-      if (byt != 0 || wid != 0 || len > 4)   
+      if ((adr & 0xFFFFFFFF) >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 4)   
         SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
       
       //
@@ -185,10 +96,6 @@ struct Cache: sc_module {
         address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
         read();
         wait(done_t);
-
-        if (flag == 1){
-          trans_pending->set_address( 0xF00000000);
-        }
       }
 
       else if ( cmd == tlm::TLM_WRITE_COMMAND ){
@@ -206,7 +113,7 @@ struct Cache: sc_module {
       wait( sc_time(10, SC_NS) );
       cout  << "1 - "   << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
       
-      status = socket->nb_transport_bw( *trans_pending, phase, delay_pending );   
+      status = socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );   
 
       switch (status)     
         case tlm::TLM_ACCEPTED:   
@@ -215,17 +122,17 @@ struct Cache: sc_module {
           cout  << "1 - "   << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
           phase = tlm::END_RESP;
           
-          socket->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
+          socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
       
 
       //********************************************************************************
-      //                     SOLO SE USA PARA PRUEBAS DE LA CACHE
+      //                     SOLO SE USA PARA PRUEBAS DE LA RAM 
       //********************************************************************************
       cout << endl;
-      cout << "index: " << index << "| offset: " << offset << endl;
+      cout << "Memoria RAM" << endl;
       cout << endl;
-      for (int j = 0; j < ways_n; j++){
-        cout << "Way #" << dec << j << " Tag: " << hex << mem.sets[index].block[j].tag[offset] << " | data: " << hex << mem.sets[index].block[j].data[offset] << endl;
+      for (int j = 0; j < address + 16; j++){
+        cout << "Cel Num #" << dec << j << " | data: " << hex << mem[j] << endl;
       }
       cout << endl;
       //********************************************************************************
@@ -234,14 +141,7 @@ struct Cache: sc_module {
     }   
   }   
   
-  //==============================================================================================
-
-  // TLM2 non-blocking transport method
-  //
-  // Se igresan tres variables:
-  //   trans: Transaccion entrante
-  //   phase: Indica la phase en la que se encuentra la transaccion
-  //   delay: Tiempo que tarda la transaccion
+  //----------------------------------------------------------------------------------------------
 
   virtual tlm::tlm_sync_enum nb_transport_fw( tlm::tlm_generic_payload& trans,
                                               tlm::tlm_phase& phase, 
@@ -300,7 +200,7 @@ struct Cache: sc_module {
     //
     // SEGUNDA FASE DE LA TRANSACCION
     //
-    if(phase == tlm::END_REQ){
+    else if(phase == tlm::END_REQ){
       //Se espera el delay ingresado en la funcion
       wait(delay);
       //Se imprime en pantalla el id de la transaccion y el tiempo de ejecucion en el que se encuentra el proceso
@@ -310,30 +210,134 @@ struct Cache: sc_module {
       //Devuelve la confirmacion de que se TERMONO la transaccion
       return tlm::TLM_COMPLETED;
     }
-  }
+
+    else{
+      return tlm::TLM_COMPLETED;
+    }
+  };
+  
+  
+    //==============================================================================================
+    //                                   FUNCIONES DE INICIADOR
+    //==============================================================================================
+
+    //----------------------------------------------------------------------------------------------
+    // Thread Iniciador
+    void thread_process_to_bw(){
+        
+        tlm::tlm_generic_payload trans;
+        sc_time delay = sc_time(10, SC_NS);
+
+        while(false){
+            wait(initiator_t);                
+
+            trans.set_extension( id_extension_initiator );
+
+            //PHASE == BEGIN_REQ
+            tlm::tlm_phase phase = tlm::BEGIN_REQ;
+            tlm::tlm_command cmd = static_cast<tlm::tlm_command>(comando_Initiator); //comando_Initiator = (0 read, 1 write)
+            
+            //Parametros de trans
+            trans.set_command( cmd );   
+            trans.set_address( address_Initiator );   
+            trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data_Initiator) ); //Este es un puntero
+            trans.set_data_length( 4 );   
+            trans.set_byte_enable_ptr( 0 );
+
+            tlm::tlm_sync_enum status;
+
+            wait( sc_time(10, SC_NS) );
+            cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
+
+            status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
+            
+            // Checkea el status de la transaccion   
+            switch (status)
+            {
+                case tlm::TLM_ACCEPTED:   
+                
+                    wait( sc_time(10, SC_NS) );
+                    cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
+                    phase = tlm::END_REQ; 
+                    
+                    status = socket_initiator->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
+                    break;   
+            
+                case tlm::TLM_UPDATED:
+
+                    //None to do
+
+                case tlm::TLM_COMPLETED:   
+            
+                    if (trans.is_response_error() )   
+                        SC_REPORT_ERROR("TLM2", "Response error from nb_transport_fw");   
+
+                    cout << endl;
+                    cout  << "0 - "<< "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
+                            << hex << data_Initiator << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
+                    cout << endl;
+
+                    break;   
+            }
+            
+            //Delay between RD/WR request
+            wait(100, SC_NS);   
+            
+        }
+    }
+    
+    //----------------------------------------------------------------------------------------------
+    
+    virtual tlm::tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& trans,
+                                                tlm::tlm_phase& phase,
+                                                sc_time& delay ){
+        
+        tlm::tlm_command cmd    =  trans.get_command();   
+        sc_dt::uint64    adr    =  trans.get_address();   
+        int              data_p = *trans.get_data_ptr();
+        
+        ID_extension* id_extension = new ID_extension;
+        trans.get_extension( id_extension ); 
+
+        if (phase == tlm::BEGIN_RESP) 
+        {                        
+            // Initiator obliged to check response status   
+            if (trans.is_response_error() )   
+                SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
+
+            //Delay para BEGIN_RESP
+            wait(delay);
+            cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
+            return tlm::TLM_ACCEPTED;
+        } 
+
+        else if (phase == tlm::END_RESP) 
+        {
+            //Delay for END_RESP
+            wait(delay);
+            cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
+            initiator_done_t.notify();
+            return tlm::TLM_COMPLETED;
+        }
+
+        else
+        {
+            initiator_done_t.notify();
+            return tlm::TLM_COMPLETED;
+        }
+    }
+
+
+  
   
   //==============================================================================================
 
   void write() {
-    wr_t.notify(wr_delay, SC_NS);
+    wr_t.notify(wr_delay_ram, SC_NS);
   }
 
   void read() {
-    rd_t.notify(rd_delay, SC_NS);  
-  }  
-
-  void reorder(int i, int tag, int index, int offset, int data){
-    for (int w = i; w > 0; w--){
-      mem.sets[index].block[w].tag[offset]   = mem.sets[index].block[w - 1].tag[offset];
-      mem.sets[index].block[w].data[offset]  = mem.sets[index].block[w - 1].data[offset];
-      mem.sets[index].block[w].use[offset]   = mem.sets[index].block[w - 1].use[offset];
-      mem.sets[index].block[w].order[offset] = w;
-    }
-
-    mem.sets[index].block[0].tag[offset]   = tag;
-    mem.sets[index].block[0].data[offset]  = data;
-    mem.sets[index].block[0].use[offset]   = 1;
-    mem.sets[index].block[0].order[offset] = 0;
+    rd_t.notify(rd_delay_ram, SC_NS);  
   }
 
   //Escritura
@@ -342,30 +346,9 @@ struct Cache: sc_module {
 
       //Espera tiempo de escritura
       wait(wr_t);
-
-      tag    = address.range(31,14);
-      index  = address.range(13,2);
-      offset = address.range(1,0);
-
       memcpy(&data_aux, data, 4);
-      //mem.sets[index].block[0].data[offset]  = data_aux;
-
-      for (int i = 0; i < ways_n; i++){
-        //Este condisional se traduce como, verifique si el espacio
-        //en memoria de offset en el set numero index esta disponible
-        if (mem.sets[index].block[i].use[offset] == 0){
-          wait(i*wr_miss_delay,SC_NS);
-          reorder(i, tag, index, offset, data_aux);
-          break;
-        }
-        else{
-          if (i == ways_n - 1){
-            wait(i*wr_miss_delay + cln_delay,SC_NS);
-            reorder(i, tag, index, offset, data_aux);
-          }
-        }
-      }
-
+      
+      mem[address] = data_aux;
       done_t.notify();
     }
   }
@@ -376,47 +359,9 @@ struct Cache: sc_module {
 
       //Espera tiempo de lectura
       wait(rd_t);
+      data_aux = mem[address];
 
-      flag = 0;
-      tag    = address.range(31,14);
-      index  = address.range(13,2);
-      offset = address.range(1,0);
-
-
-      for (int i = 0; i < ways_n; i++){
-        if (mem.sets[index].block[i].use[offset] == 1){
-          
-          //Si se encuentra
-          if (mem.sets[index].block[i].tag[offset] == tag){
-            
-            data_aux = mem.sets[index].block[i].data[offset]; 
-
-            //Se copia el dato en 'data' y sale del bucle
-            memcpy(data, &data_aux, 4);
-            reorder(i, tag, index, offset, data_aux);
-            break;
-          }
-
-          //Si se llega al final de la cache y no se encuentra 
-          //la diredccion se lebanda la bandera para buscar el
-          //dato fuera de la cache
-          else if(i == ways_n - 1){
-            flag = 1;
-            data_aux = mem.sets[index].block[6].data[offset];
-            memcpy(data, &data_aux, 4);
-            wait(pen_delay,SC_NS);
-          }
-        }
-
-        else {
-          flag = 1;
-          data_aux = 0;
-          memcpy(data, &data_aux, 4);
-          wait(pen_delay,SC_NS);
-          break;
-        }
-      }
-
+      memcpy(data, &data_aux, 4);
       done_t.notify();
     }
   }
@@ -430,17 +375,17 @@ struct Cache: sc_module {
   int data_aux;
   
   //
-  mem_cache mem;
+  int mem[SIZE];
   sc_event wr_t, rd_t;
   sc_uint<32> address;
-  int tag;
-  int index;
-  int offset;
-  int Aux;
-
-  //Modificados
   unsigned char* data;
-  bool flag;
+
+  //Variables de puerto Iniciador  
+  int data_Initiator;  
+  long int address_Initiator;
+  bool comando_Initiator;
+  sc_event initiator_t, initiator_done_t;
+  ID_extension* id_extension_initiator = new ID_extension; //Se crea un ID con la clase anterior
 };
 
 #endif
