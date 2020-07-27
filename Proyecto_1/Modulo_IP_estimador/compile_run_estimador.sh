@@ -7,7 +7,7 @@ export SYSTEMC_HOME=/usr/local/systemc-2.3.3/
 
 export LD_LIBRARY_PATH=$SYSTEMC_HOME/lib-linux64
 
-g++ -I$SYSTEMC_HOME/include -L$SYSTEMC_HOME/lib-linux64 estimador_tb.cpp estimador.cpp  -lsystemc -lm -o estimador.o
+g++ -I$SYSTEMC_HOME/include -L$SYSTEMC_HOME/lib-linux64 estimador_tb.cpp -lsystemc -lm -o estimador.o
 
 echo 'Simulation Started'
 

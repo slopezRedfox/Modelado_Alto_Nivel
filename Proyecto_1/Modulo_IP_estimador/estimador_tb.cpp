@@ -1,7 +1,7 @@
 #include <systemc.h>
-#include "estimador.cpp"
-#include "panel_model.cpp"
-
+#include "to_fixed.h"
+#include "estimador.h"
+#include "panel_model.h"
 
 
 float t = 0;
@@ -9,21 +9,19 @@ float segundos=5;
 float sample_rate=1e6;
 float step=1/sample_rate;
 float n_samples=segundos*sample_rate;
-float tb_adc_v, tb_adc_i;
+float V_TB, I_TB;
 
 
 int sc_main (int argc, char* argv[]) {
   
-  sc_signal<float > adc_v;
-  sc_signal<float > adc_i;
-  //sc_signal<sc_uint<4> > tid;
-  //sc_signal<bool>   valid;
-  //sc_signal<bool>   ready;
+  sc_signal< sc_uint<16> > adc_v;
+  sc_signal< sc_uint<16> > adc_i;
+  
   sc_signal<bool>   start;
-  sc_signal<float > param_1;
-  sc_signal<float > param_2;
-  sc_signal<float > volt;
-  sc_signal<float > current;
+  sc_signal< sc_uint<32> > param_1;
+  sc_signal< sc_uint<32> > param_2;
+  sc_signal< sc_uint<32> > volt;
+  sc_signal< sc_uint<32> > current;
   
   
   estimador estimador_dut("ESTIMADOR");
@@ -71,15 +69,18 @@ int sc_main (int argc, char* argv[]) {
   cout << "step= " << step << endl;
   
   for(int i = 0; i <n_samples; i++){  
+
     sc_start(50,SC_NS);
     start = 0;
-    adc_v = InputVoltage(t);
-    adc_i = InputCurrent(t);
+    V_TB = InputVoltage(t)/22;
+    I_TB = InputCurrent(t)/5;
 
-    file_Signals << t <<","<< adc_i << ","<< adc_v << endl;
+    adc_v = to_fixed_16(V_TB);
+    adc_i = to_fixed_16(I_TB);
+
+    file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
     file_Params << t << ","<< param_1 << ","<< param_2 << endl;
     t = t + step;
-    //cout<<"V= "<< adc_v << " I= "<< adc_i <<endl;
 
     cout << "@" << sc_time_stamp()<< endl;
     estimador_dut.process_sample();

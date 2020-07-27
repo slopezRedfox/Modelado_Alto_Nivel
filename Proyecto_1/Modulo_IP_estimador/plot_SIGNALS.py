@@ -43,7 +43,7 @@ plt.xlabel('time (s)')
 plt.ylabel('Current (A)')
 plt.title('ipv scaled x 5')
 plt.grid(True)
-plt.savefig("ipv scaled x 5.png")
+plt.savefig("ipv_scaled_x_5.png")
 
 fig2=plt.figure(2)
 plt.plot(time[1:len(time)], volt[1:len(time)], 'b')
@@ -53,7 +53,7 @@ plt.xlabel('time (s)')
 plt.ylabel('Volt (V)')
 plt.title('Vpv scaled x 22')
 plt.grid(True)
-plt.savefig("vpv scaled x 22.png")
+plt.savefig("vpv_scaled_x_22.png")
 
 
 plt.show()
