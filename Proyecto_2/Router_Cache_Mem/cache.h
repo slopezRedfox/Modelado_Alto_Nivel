@@ -467,7 +467,6 @@ struct Cache : sc_module
             tag = address.range(31, 14);
             index = address.range(13, 2);
             offset = address.range(1, 0);
-
             memcpy(&data_aux, data, 4);
             
             if (tag == 0x10f00)
@@ -514,7 +513,6 @@ struct Cache : sc_module
                     }
                 }
             }
-            
             done_t.notify();
         }
     }
@@ -605,7 +603,6 @@ struct Cache : sc_module
                     }
                 }
             }
-
             done_t.notify();
         }
     }
@@ -618,7 +615,6 @@ struct Cache : sc_module
     sc_event done_t;
     int data_aux;
 
-    //
     mem_cache mem;
     sc_event wr_t, rd_t;
     sc_uint<32> address;
@@ -637,8 +633,7 @@ struct Cache : sc_module
     long int address_Initiator;
     bool comando_Initiator;
     sc_event initiator_t, initiator_done_t;
-    ID_extension* id_extension_initiator = new ID_extension; //Se crea un ID con la clase anterior
-
+    ID_extension* id_extension_initiator = new ID_extension;
 };
 
 #endif

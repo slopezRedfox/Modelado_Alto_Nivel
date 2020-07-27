@@ -15,7 +15,7 @@ using namespace std;
 #include <queue>
 
 //Constantes de memoria cache
-#define SIZE 16 //512000000
+#define SIZE 0x4FFFFFFF
 #define wr_delay_ram 15
 #define rd_delay_ram 10
 
@@ -45,176 +45,181 @@ struct Ram: sc_module {
     SC_THREAD(rd);
   }
 
-  //==============================================================================================
-  //                                   FUNCIONES DE TARGET
-  //==============================================================================================
+    //==============================================================================================
+    //                                   FUNCIONES DE TARGET
+    //==============================================================================================
 
-  // Thread Iniciador
-  //----------------------------------------------------------------------------------------------
-  void thread_process_to_fw(){
-    
-    while (true) {
-    
-      // wait
-      wait(e1); 
-   
-      tlm::tlm_phase phase;
-      ID_extension* id_extension = new ID_extension;
-      trans_pending->get_extension( id_extension ); 
-      
-      //Entre las diferencias con la funcion anterior es que aqui se pide el tipo de comando
-      //Si se esta hablando de una escritura o una lectura. Otra diferencia es que en este
-      //apartado si se hara uso de esta informacion que se extrae de la transaccion
-      tlm::tlm_command cmd = trans_pending->get_command();
-      sc_dt::uint64    adr = trans_pending->get_address();
+    // Thread Iniciador
+    //----------------------------------------------------------------------------------------------
+    void thread_process_to_fw(){
+        
+        while (true) 
+        {
+            wait(e1); 
+        
+            tlm::tlm_phase phase;
+            ID_extension* id_extension = new ID_extension;
+            trans_pending->get_extension( id_extension ); 
+            
+            //Parametros del paquete de transaccion
+            tlm::tlm_command cmd = trans_pending->get_command();
+            sc_dt::uint64    adr = trans_pending->get_address();
+            unsigned char*   ptr = trans_pending->get_data_ptr();   
+            unsigned int     len = trans_pending->get_data_length();   
+            unsigned char*   byt = trans_pending->get_byte_enable_ptr();   
+            unsigned int     wid = trans_pending->get_streaming_width();   
 
-      //La otra diferencia es que aqui si se extrae los datos de la transferencia
-      unsigned char*   ptr = trans_pending->get_data_ptr();   
-      unsigned int     len = trans_pending->get_data_length();   
-      unsigned char*   byt = trans_pending->get_byte_enable_ptr();   
-      unsigned int     wid = trans_pending->get_streaming_width();   
+            //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
+            if ((adr & 0xFFFFFFFF) >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 4)   
+                SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
+            
+            //
+            //                            IMPORTANTE
+            //
+            // Se pasan los parametros a las variables globales, dependiendo si se esta
+            // en escritura o lectura
 
-      //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-      if ((adr & 0xFFFFFFFF) >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 4)   
-        SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
-      
-      //
-      //                            IMPORTANTE
-      //
-      // Se pasan los parametros a las variables globales, dependiendo si se esta
-      // en escritura o lectura
+            // Obliged to set response status to indicate successful completion   
+            trans_pending->set_response_status( tlm::TLM_OK_RESPONSE );  
+            delay_pending= sc_time(10, SC_NS);
 
-      // Obliged to set response status to indicate successful completion   
-      trans_pending->set_response_status( tlm::TLM_OK_RESPONSE );  
-      delay_pending= sc_time(10, SC_NS);
+            //********************************************************************************
+            // SE MODIFICA SEGUN LO QUE SE NECESITE CUANDO SE VA A HACER LECTURAS/ESCRITURAS
+            //********************************************************************************
+            if ( cmd == tlm::TLM_READ_COMMAND ){
+                data = ptr;
+                address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
+                read();
+                wait(done_t);
+            }
 
-      //********************************************************************************
-      // SE MODIFICA SEGUN LO QUE SE NECESITE CUANDO SE VA A HACER LECTURAS/ESCRITURAS
-      //********************************************************************************
-      if ( cmd == tlm::TLM_READ_COMMAND ){
-        data = ptr;
-        address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
-        read();
-        wait(done_t);
-      }
+            else if ( cmd == tlm::TLM_WRITE_COMMAND ){
+                data = ptr;
+                address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
+                write();
+                wait(done_t);
+            }
+            //********************************************************************************
+            //********************************************************************************
+            
+            tlm::tlm_sync_enum status;
+            phase  = tlm::BEGIN_RESP; 
+            
+            wait( sc_time(10, SC_NS) );
+            cout  << "1 - "   << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
+            
+            status = socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );   
 
-      else if ( cmd == tlm::TLM_WRITE_COMMAND ){
-        data = ptr;
-        address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
-        write();
-        wait(done_t);
-      }
-      //********************************************************************************
-      //********************************************************************************
-      
-      tlm::tlm_sync_enum status;
-      phase  = tlm::BEGIN_RESP; 
-      
-      wait( sc_time(10, SC_NS) );
-      cout  << "1 - "   << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
-      
-      status = socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );   
+            switch (status)     
+                case tlm::TLM_ACCEPTED:   
+                
+                wait( sc_time(10, SC_NS) );          
+                cout  << "1 - "   << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
+                phase = tlm::END_RESP;
+                
+                socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
+            
 
-      switch (status)     
-        case tlm::TLM_ACCEPTED:   
-          
-          wait( sc_time(10, SC_NS) );          
-          cout  << "1 - "   << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
-          phase = tlm::END_RESP;
-          
-          socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
-      
+            //********************************************************************************
+            //                     SOLO SE USA PARA PRUEBAS DE LA RAM 
+            //********************************************************************************
+            cout << endl;
+            cout << "Memoria RAM" << endl;
+            cout << endl;
 
-      //********************************************************************************
-      //                     SOLO SE USA PARA PRUEBAS DE LA RAM 
-      //********************************************************************************
-      cout << endl;
-      cout << "Memoria RAM" << endl;
-      cout << endl;
-      for (int j = 0; j < address + 16; j++){
-        cout << "Cel Num #" << dec << j << " | data: " << hex << mem[j] << endl;
-      }
-      cout << endl;
-      //********************************************************************************
-      //********************************************************************************
+            double add;
+            if (address < 8)
+            {
+                add = 8;
+            }
+            else if (address > SIZE - 8){
+                add = SIZE - 8;
+            }
+            else{
+                add = address;
+            }
+            
+            cout << endl;
+            cout << "Address: " << address << endl;
+            cout << endl;
 
+            for (int j = add - 8; j < add + 8; j++){
+                cout << "Cel Num #" << hex << j << " | data: " << hex << mem[j] << endl;
+            }
+            cout << endl;
+            //********************************************************************************
+            //********************************************************************************
+        }   
     }   
-  }   
-  
-  //----------------------------------------------------------------------------------------------
-
-  virtual tlm::tlm_sync_enum nb_transport_fw( tlm::tlm_generic_payload& trans,
-                                              tlm::tlm_phase& phase, 
-                                              sc_time& delay){
     
-    //Estos son los la lista de atributos usados en el non-bloking.
-    //Se busca la direccion de la transferencia (no se usa)
-    sc_dt::uint64    adr = trans.get_address();
+    //----------------------------------------------------------------------------------------------
 
-    //Se busca el dato del tamaño del bloque de datos que se esta transfiriendo (no se usa)
-    unsigned int     len = trans.get_data_length();
-    unsigned char*   byt = trans.get_byte_enable_ptr(); //Se busca el bit enable de datos
-    unsigned int     wid = trans.get_streaming_width(); //PREGUNTA: ???? (no se usa)
+    virtual tlm::tlm_sync_enum nb_transport_fw( tlm::tlm_generic_payload& trans,
+                                                tlm::tlm_phase& phase, 
+                                                sc_time& delay){
+        
 
-    //Se le coloca un ID a cada transaccion
-    ID_extension* id_extension = new ID_extension;
-    trans.get_extension( id_extension ); //Se extrae el ID de la transaccion
+        sc_dt::uint64    adr = trans.get_address();
+        unsigned int     len = trans.get_data_length();
+        unsigned char*   byt = trans.get_byte_enable_ptr();
+        unsigned int     wid = trans.get_streaming_width();
 
-    //
-    // PRIMERA FASE DE LA TRANSACCION
-    //
-    if(phase == tlm::BEGIN_REQ){
-      // Primero se pregunta si el dato a transmitir esta abilitado
-      if (byt != 0) {
+        //Se le coloca un ID a cada transaccion
+        ID_extension* id_extension = new ID_extension;
+        trans.get_extension( id_extension ); //Se extrae el ID de la transaccion
+
         //
-        trans.set_response_status( tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE );
-        return tlm::TLM_COMPLETED;
-      }
-      
-      // Luego se pregunta si el tamaño del paquete es el adecuado
-      if (len > 4 || wid != 0) {
-        trans.set_response_status( tlm::TLM_BURST_ERROR_RESPONSE );
-        return tlm::TLM_COMPLETED;
-      }
+        // PRIMERA FASE DE LA TRANSACCION
+        //
+        if(phase == tlm::BEGIN_REQ){
+            // Primero se pregunta si el dato a transmitir esta abilitado
+            if (byt != 0) {
+                //
+                trans.set_response_status( tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE );
+                return tlm::TLM_COMPLETED;
+            }
+            
+            // Luego se pregunta si el tamaño del paquete es el adecuado
+            if (len > 4 || wid != 0) {
+                trans.set_response_status( tlm::TLM_BURST_ERROR_RESPONSE );
+                return tlm::TLM_COMPLETED;
+            }
 
-      // Se pasa los datos a las variables globales de la estructura
-      // Que estan declaradas al final de la misma, para poder ser
-      // trabajados en la funcion thread
-      trans_pending = &trans;
-      phase_pending = phase;
-      delay_pending = delay;
+            // Se pasa los datos a las variables globales de la estructura
+            // Que estan declaradas al final de la misma, para poder ser
+            // trabajados en la funcion thread
+            trans_pending = &trans;
+            phase_pending = phase;
+            delay_pending = delay;
 
-      //Se imprime que se inicio el request
-      //Se indica el ID de la transaccion y el tiempo en el que inicia
-      wait(delay);
-      cout  << "1 - "   << name() << "    BEGIN_REQ  RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;            
+            wait(delay);
+            cout  << "1 - "   << name() << "    BEGIN_REQ  RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;            
 
-      // Se hace un notify de e1 para permitir a la funcion thread ejecutar
-      e1.notify();
+            // Se hace un notify de e1 para permitir a la funcion thread continuar
+            e1.notify();
 
-      //Se envia que la transaccion ha sido aceptada
-      return tlm::TLM_ACCEPTED;
-    }
+            //Se envia que la transaccion ha sido aceptada
+            return tlm::TLM_ACCEPTED;
+        }
 
 
-    //
-    // SEGUNDA FASE DE LA TRANSACCION
-    //
-    else if(phase == tlm::END_REQ){
-      //Se espera el delay ingresado en la funcion
-      wait(delay);
-      //Se imprime en pantalla el id de la transaccion y el tiempo de ejecucion en el que se encuentra el proceso
-      cout  << "1 - "   << name() << "    END_REQ    RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      
-      //Se imprime que se termino el request
-      //Devuelve la confirmacion de que se TERMONO la transaccion
-      return tlm::TLM_COMPLETED;
-    }
+        //
+        // SEGUNDA FASE DE LA TRANSACCION
+        //
+        else if(phase == tlm::END_REQ){
 
-    else{
-      return tlm::TLM_COMPLETED;
-    }
-  };
+            wait(delay);
+            cout  << "1 - "   << name() << "    END_REQ    RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+            
+            //Se imprime que se termino el request
+            //Devuelve la confirmacion de que se TERMONO la transaccion
+            return tlm::TLM_COMPLETED;
+        }
+
+        else{
+            return tlm::TLM_COMPLETED;
+        }
+    };
   
   
     //==============================================================================================
@@ -281,8 +286,7 @@ struct Ram: sc_module {
             }
             
             //Delay between RD/WR request
-            wait(100, SC_NS);   
-            
+            wait(100, SC_NS);    
         }
     }
     
@@ -328,64 +332,65 @@ struct Ram: sc_module {
     }
 
 
-  
+
   
   //==============================================================================================
 
-  void write() {
-    wr_t.notify(wr_delay_ram, SC_NS);
-  }
-
-  void read() {
-    rd_t.notify(rd_delay_ram, SC_NS);  
-  }
-
-  //Escritura
-  void wr() {
-    while(true) {
-
-      //Espera tiempo de escritura
-      wait(wr_t);
-      memcpy(&data_aux, data, 4);
-      
-      mem[address] = data_aux;
-      done_t.notify();
+    void write() {
+        wr_t.notify(wr_delay_ram, SC_NS);
     }
-  }
 
-  //Lectura
-  void rd() {
-    while(true) {
-
-      //Espera tiempo de lectura
-      wait(rd_t);
-      data_aux = mem[address];
-
-      memcpy(data, &data_aux, 4);
-      done_t.notify();
+    void read() {
+        rd_t.notify(rd_delay_ram, SC_NS);  
     }
-  }
-  
-  //Parametros nuevos
-  sc_event  e1; 
-  tlm::tlm_generic_payload* trans_pending;   
-  tlm::tlm_phase phase_pending;   
-  sc_time delay_pending;
-  sc_event done_t;
-  int data_aux;
-  
-  //
-  int mem[SIZE];
-  sc_event wr_t, rd_t;
-  sc_uint<32> address;
-  unsigned char* data;
 
-  //Variables de puerto Iniciador  
-  int data_Initiator;  
-  long int address_Initiator;
-  bool comando_Initiator;
-  sc_event initiator_t, initiator_done_t;
-  ID_extension* id_extension_initiator = new ID_extension; //Se crea un ID con la clase anterior
+    //Escritura
+    void wr() 
+    {
+        while(true) 
+        {
+            //Espera tiempo de escritura
+            wait(wr_t);
+            memcpy(&data_aux, data, 4);
+            
+            mem[address] = data_aux;
+            done_t.notify();
+        }
+    }
+
+    //Lectura
+    void rd() 
+    {
+        while(true) 
+        {
+            //Espera tiempo de lectura
+            wait(rd_t);
+            data_aux = mem[address];
+
+            memcpy(data, &data_aux, 4);
+            done_t.notify();
+        }
+    }
+    
+    //Parametros nuevos
+    sc_event  e1; 
+    tlm::tlm_generic_payload* trans_pending;   
+    tlm::tlm_phase phase_pending;   
+    sc_time delay_pending;
+    sc_event done_t;
+    int data_aux;
+    
+    int mem[SIZE];
+    sc_event wr_t, rd_t;
+    sc_uint<32> address;
+    unsigned char* data;
+
+    //Variables de puerto Iniciador  
+    int data_Initiator;  
+    long int address_Initiator;
+    bool comando_Initiator;
+    sc_event initiator_t, initiator_done_t;
+    ID_extension* id_extension_initiator = new ID_extension; //Se crea un ID con la clase anterior
 };
 
 #endif

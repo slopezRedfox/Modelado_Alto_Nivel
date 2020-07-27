@@ -1,6 +1,8 @@
 #ifndef INICIADOR_H
 #define INICIADOR_H
 
+#define SC_INCLUDE_DYNAMIC_PROCESSES
+
 #include "systemc"
 using namespace sc_core;
 using namespace sc_dt;
@@ -335,13 +337,74 @@ struct Controler: sc_module {
     cout << endl;
 
     comando = 1;
-    data    = 0x000000FF;
+    data    = 0x0000000A;
          //                              offset
          //  |      tag        |  index    | |
-    addrs  =0b00000000000000000000000000000010;
-    //addrs  = addrs | 0xAB00000000;
+    addrs  =0b00000000000000000000000000000000;
     addrs  = addrs | 0xCA00000000;
-    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+
+    comando = 1;
+    data    = 0x0000000B;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000001000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x0000000C;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000011000000000000000;
+    addrs  = addrs | 0xCB00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x0000000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000111000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x0000000E;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000001111000000000000000;
+    addrs  = addrs | 0xCA00000000;
     do_t.notify(0,SC_NS);
     wait(done_tC);
 
@@ -355,10 +418,88 @@ struct Controler: sc_module {
     data    = 0x0000000F;
          //                              offset
          //  |      tag        |  index    | |
-    addrs  =0b00000000000000000000000000000001;
-    //addrs  = addrs | 0xAB00000000;
+    addrs  =0b00000000000011111000000000000000;
     addrs  = addrs | 0xCA00000000;
-    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x000000BF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x000000DF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0x000000CF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000111111000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+
+    comando = 0;
+    data    = 0x00000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000001000000000000000;
+    addrs  = addrs | 0xCA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 0;
+    data    = 0x00000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000000;
+    addrs  = addrs | 0xCA00000000;
     do_t.notify(0,SC_NS);
     wait(done_tC);
 /*
