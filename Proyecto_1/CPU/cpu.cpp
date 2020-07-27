@@ -48,14 +48,14 @@ Y siempre se estra leyendo datos de memoria que corresponde al estimador para gu
 //Valores de los resgistro del estimador
 #define I_scale_factor      1
 #define V_scale_factor      2
-#define Ig_value            3
-#define Gamma11             4
-#define Gamma12             5
-#define Gamma21             6
-#define Gamma22             7
-#define Init_alpha          8
-#define Init_beta           9
-#define T_sampling          2
+#define Ig                  3
+#define GAMMA11             4
+#define GAMMA12             5
+#define GAMMA21             6
+#define GAMMA22             7
+#define INIT_ALPHA          8
+#define INIT_BETA           9
+#define T_SAMPLING          2
 #define Set_flag            1
 
 SC_MODULE (cpu) {
@@ -78,35 +78,35 @@ SC_MODULE (cpu) {
                 break;
 
             case 2:
-                return Ig_value;
+                return Ig;
                 break;
 
             case 3:
-                return Gamma11;
+                return GAMMA11;
                 break;
 
             case 4:
-                return Gamma12;
+                return GAMMA12;
                 break;
             
             case 5:
-                return Gamma21;
+                return GAMMA21;
                 break;
 
             case 6:
-                return Gamma22;
+                return GAMMA22;
                 break;
 
             case 7:
-                return Init_alpha;
+                return INIT_ALPHA;
                 break;
 
             case 8:
-                return Init_beta;
+                return INIT_BETA;
                 break;
 
             case 9:
-                return T_sampling;
+                return T_SAMPLING;
                 break;
 
             case 10:
