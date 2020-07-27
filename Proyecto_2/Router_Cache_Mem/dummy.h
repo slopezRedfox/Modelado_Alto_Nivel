@@ -75,13 +75,17 @@ struct Dummy: sc_module{
             //********************************************************************************
             if ( cmd == tlm::TLM_READ_COMMAND ){
                 cout << endl;
-                cout << "HI: " << name() << endl;
+                cout << hex << adr << endl;
+                //cout << *ptr << endl;
+                cout << "HI Read: " << name() << endl;
                 cout << endl;
             }
 
             else if ( cmd == tlm::TLM_WRITE_COMMAND ){
-                cout << endl;
-                cout << "HI: " << name() << endl;
+                cout << endl;          
+                cout << hex << adr << endl;
+                //cout << *ptr << endl;
+                cout << "HI Write: " << name() << endl;
                 cout << endl;
             }
 
