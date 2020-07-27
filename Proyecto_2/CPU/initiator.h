@@ -19,26 +19,7 @@ using namespace std;
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 
-
-//Direccion de registros de solo lectura del estimador
-#define Param_approx_1_Addr 0x43c00010
-#define Param_approx_2_Addr 0x43c00014
-#define Voltage_out         0x43c00018
-#define Current_out         0x43c0001c
-
-//Direcciones de registro de solo escritura del estimador
-#define I_scale_factor_Addr 0x43c00020
-#define V_scale_factor_Addr 0x43c00024
-#define Ig_value_Addr       0x43c00028
-#define Gamma11_Addr        0x43c0002c
-#define Gamma12_Addr        0x43c00030
-#define Gamma21_Addr        0x43c00038
-#define Gamma22_Addr        0x43c00040
-#define Init_alpha_Addr     0x43c00048
-#define Init_beta_Addr      0x43c00050
-#define T_sampling_Addr     0x43c00058
-#define Set_flag_Addr       0x43c00060
-
+#define calc_delay 0
 //Constans from memory
 
 #define I_scale_factor    5
@@ -51,10 +32,11 @@ using namespace std;
 #define INIT_ALPHA        0.55
 #define INIT_BETA         -13.0
 #define T_SAMPLING        1e-6
-#define Set_flag          1
 
 #define INT2U32(x) *(uint32_t*)&x
+#define INT2U16(x) *(uint16_t*)&x
 
+# define M_PI           3.14159265358979323846  /* pi */
 
 
 // Initiator module generating generic payload transactions
@@ -92,8 +74,9 @@ struct Controler: sc_module {
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);
-    SC_THREAD(thread_process_to_bw); 
-
+    SC_THREAD(thread_process_to_bw);  
+    
+    SC_THREAD(estimador_main);
     SC_THREAD(TB);
   }
 
@@ -374,6 +357,19 @@ struct Controler: sc_module {
   //                                   FUNCIONES TB
   //==============================================================================================
 
+  float InputVoltage(float t){
+    return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
+  }
+
+  float InputCurrent(float t){
+    return (Lambda - exp( alpha * InputVoltage(t) + b));
+  }
+
+  uint16_t to_fixed_16(float a){
+    a=a*pow(2,16);
+    int b = (int)a;
+    return INT2U16(b);
+  }
 
   uint32_t to_fixed_32(float a){
     a=a*pow(2,21);
@@ -381,169 +377,81 @@ struct Controler: sc_module {
     return INT2U32(b);
   }
 
-
-int write_data(int count){
-  switch(count){
-    case 0:
-      return I_scale_factor;
-      break;
-
-    case 1:
-      return V_scale_factor;
-      break;
-
-    case 2:
-      return Ig;
-      break;
-
-    case 3:
-      return GAMMA11;
-      break;
-
-    case 4:
-      return GAMMA12;
-      break;
-    
-    case 5:
-      return GAMMA21;
-      break;
-
-    case 6:
-      return GAMMA22;
-      break;
-
-    case 7:
-      return INIT_ALPHA;
-      break;
-
-    case 8:
-      return INIT_BETA;
-      break;
-
-    case 9:
-      return T_SAMPLING;
-      break;
-
-    case 10:
-      return Set_flag;
-      break;
-    
-    case 11:
-      return 0xAAAAAAAA;
-      break;
-  
-    case 12:
-      return 0xBBBBBBBB;
-      break;
-    
-    case 13:
-      return 0xCCCCCCCC;
-      break;
-
-    case 14:
-      return 0xDDDDDDDD;
-      break;
-
-    default:
-      return 0;
-      break;
+  //Datos listos
+  void process_sample() {
+    calc_t.notify(calc_delay, SC_NS);
   }
-}
 
-int write_Addr(int count){
-  switch(count){
-    case 0:
-      return I_scale_factor_Addr;
-      break;
+  void estimador_main(){
 
-    case 1:
-      return V_scale_factor_Addr;
-      break;
+    while(true){
 
-    case 2:
-      return Ig_value_Addr;
-      break;
+      wait(calc_t);
 
-    case 3:
-      return Gamma11_Addr;
-      break;
+      if(start){
+        cout << "Hola mundo" << endl;
+        init_cond_1 = INIT_ALPHA;
+        init_cond_2 = INIT_BETA;
+      };
 
-    case 4:
-      return Gamma12_Addr;
-      break;
-    
-    case 5:
-      return Gamma21_Addr;
-      break;
+      I = adc_i / pow(2,16);
+      V = adc_v / pow(2,16);
 
-    case 6:
-      return Gamma22_Addr;
-      break;
+      I *= I_scale_factor;
+      V *= V_scale_factor;
+      y_log = log(Ig - I);
+      p1=((GAMMA11*V+GAMMA12)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_1;
+      p2=((GAMMA21*V+GAMMA22)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_2;
+      init_cond_1=p1;
+      init_cond_2=p2;
 
-    case 7:
-      return Init_alpha_Addr;
-      break;
+      cout<<"param_1 = "<< p1 <<"   param_2 = "<< p2 <<endl<<endl;
 
-    case 8:
-      return Init_beta_Addr;
-      break;
+      param_1 = to_fixed_32(p1);
+      cout << "MIRAME" << endl;
+      cout << hex << param_1 << endl;
+      //Comunicacion
+      comando = 1;
+      data    = param_1;
+      addrs  = 0x43C00010;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
 
-    case 9:
-      return T_sampling_Addr;
-      break;
+      param_2 = to_fixed_32(p2);
+      cout << "MIRAME" << endl;
+      cout << hex << param_2 << endl;
+      comando = 1;
+      data    = param_2;
+      addrs  = 0x43C00014;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
 
-    case 10:
-      return Set_flag_Addr;
-      break;
+      volt = to_fixed_32(V);
+      cout << "MIRAME" << endl;
+      cout << hex << volt << endl;
+      comando = 1;
+      data    = volt;
+      addrs  = 0x43C00018;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
 
-    case 11:
-      return Param_approx_1_Addr;
-      break;
-    
-    case 12:
-      return Param_approx_2_Addr;
-      break;
-
-    case 13:
-      return Voltage_out;
-      break;
-
-    case 14:
-      return Current_out;
-      break;
-    
-    default:
-      return 0;
-      break;
-
+      current = to_fixed_32(I);
+      cout << "MIRAME" << endl;
+      cout << hex << current << endl;
+      comando = 1;
+      data    = current;
+      addrs  = 0x43C0001C;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
+      
+      wait(1,SC_NS);
+      done_tt.notify();
     }
-}
-
-int read_addr(int count){
-    switch (count)
-    {
-    case 0:
-        return Param_approx_1_Addr;
-        break;
-    
-    case 1:
-        return Param_approx_2_Addr;
-        break;
-
-    case 2:
-        return Voltage_out;
-        break;
-
-    case 3:
-        return Current_out;
-        break;
-
-    default:
-        return 0;
-        break;
-    }
-}
-
+  }
 
   void TB(){
     /*
@@ -560,66 +468,63 @@ int read_addr(int count){
 
     cout << endl;
     cout << endl;
-
-    sc_trace_file *wf = sc_create_vcd_trace_file("cpu");
+    
+    // Open VCD file
+    sc_trace_file *wf = sc_create_vcd_trace_file("estimador");
     wf->set_time_unit(1, SC_NS);
 
-    sc_trace(wf, P_Data, "P_Data");
-    sc_trace(wf, P_Addr, "P_Addr");
-    sc_trace(wf, P_Rd_Wr, "P_Rd_Wr");
+    //open CSV file
+    std::ofstream file_Signals;
+    file_Signals.open ("SIGNALS.CSV");
+    std::ofstream file_Params;
+    file_Params.open ("PARAMS.CSV");
+    
+    // Dump the desired signals
+    sc_trace(wf, adc_v, "adc_v");
+    sc_trace(wf, adc_i, "adc_i");
+    sc_trace(wf, start, "start");
+    sc_trace(wf, param_1, "param_1");
+    sc_trace(wf, param_2, "param_2");
+    sc_trace(wf, volt, "volt");
+    sc_trace(wf, current, "current");
 
-    cout << "@" << sc_time_stamp() << endl;
+    //Inicio del test
+    
+    cout << "@" << sc_time_stamp()<< endl;
+    start = 1;
+    adc_v = 0;
+    adc_i = 0;
+    process_sample();
+    wait(done_tt);
+    printf("first\n");
 
-    cout << "\nInicializador del estimador. \n";
+    //cout << "step= " << step << endl;
+    
+    for(int i = 0; i <1; i++){  
 
-    for (int i = 0; i < 15; i++)
-    {
-      P_Data = write_data(i);
-      P_Addr = write_Addr(i);
-      P_Rd_Wr = true;
-      
+      start = 0;
+      V_TB = InputVoltage(t)/22;
+      I_TB = InputCurrent(t)/5;
 
-      cout << "MIRAME" << endl;
-      cout << hex << P_Data << endl;
+      adc_v = to_fixed_16(V_TB);
+      adc_i = to_fixed_16(I_TB);
 
-      //Comunicacion
-      comando = 1;
-      data    = P_Data;
-      addrs  = P_Addr;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
+      file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
+      file_Params << t << ","<< param_1 << ","<< param_2 << endl;
+      t = t + step;
+
+      cout << "@" << sc_time_stamp()<< endl;
+      process_sample();
+      cout<< "iter = "<<i<<endl;
+      wait(done_tt);
     }
-
-    cout << "\nLectura de registro del estimador \n";
-
-    for (int i = 0; i < 4; i++)
-    {   
-      P_Rd_Wr = false;
-      P_Addr = read_addr(i);
-      cout << "MIRAME" << endl;
-      cout << hex << P_Addr << endl;
-      comando = 0;
-      data    = 0;
-      addrs  = P_Addr;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-      P_Rd_Wr = true;
-      P_Data = data; //Debe INT o hacer cambio
-
-      P_Addr = 0xA000000 + i;
-      comando = 1;
-      data    = P_Data;
-      addrs  = P_Addr;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-    }  
-
-    cout << endl <<"@" << sc_time_stamp() << "Terminando simulacion.\n" << endl;
-
+    
+    cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
+    
+    //Close files
     sc_close_vcd_trace_file(wf);
+    file_Signals.close();
+    file_Params.close(); 
 
     Exe = false;
   }
@@ -676,17 +581,6 @@ int read_addr(int count){
   float step=1/sample_rate;
   float n_samples=segundos*sample_rate;
   float V_TB, I_TB;
-
-
-  //---------------Variables CPU-------------------------------
-  sc_uint<32> P_Data;
-  sc_uint<32> P_Addr;
-  bool P_Rd_Wr;
-  
-  //---------------Variable internas CPU-----------------------
-  int Data_m = 0;
-  int Addr_m = 0;
-  bool Rd_Wr_m = false;
 };
 
 
