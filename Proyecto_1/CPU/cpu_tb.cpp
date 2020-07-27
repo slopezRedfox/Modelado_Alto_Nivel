@@ -31,9 +31,7 @@ int sc_main (int argc, char* argv[]){
 
     for (int i = 0; i < 4; i++)
     {
-        Data = 0x0; //preguntar si la lectura de datos se hace de manera correcta 
         Addr = cpu.read_addr(i);
-        sc_start(1,SC_NS);
         Data = 0xabcdabcd;
         sc_start(1,SC_NS);
         printf("Data = %x \t Address = %x \n",Data, Addr);
