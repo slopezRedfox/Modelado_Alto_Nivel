@@ -9,7 +9,7 @@ SC_MODULE (ram) {
  
   //-----------Internal variables-------------------
   int * mem;
-  int * data;
+  int data[8];
   int address;
   int burst;
   sc_event rd_t, wr_t;
@@ -17,7 +17,7 @@ SC_MODULE (ram) {
   // Constructor for memory
   //SC_CTOR(ram) {
   SC_HAS_PROCESS(ram);
-    ram(sc_module_name ram, int size=512e6) {
+    ram(sc_module_name ram, int size=512000000) {
     mem = new int [size];
     SC_THREAD(wr);
     SC_THREAD(rd);
@@ -25,15 +25,21 @@ SC_MODULE (ram) {
   } // End of Constructor
 
    //------------Code Starts Here-------------------------
-  void write(int addr, int * dat, int brst=0) {
-    data = dat;
+  void write(int addr, int * dat, int brst) {
+    for(int i; i < 8; i++)
+    {
+      data[i] = dat[i];
+    }
     address = addr;
     burst = brst;
     wr_t.notify(WR_DELAY, SC_NS);
   }  
 
   void read(int addr, int * dat, int brst=0) {
-    data = dat;
+    for(int i; i < 8; i++)
+    {
+      data[i] = dat[i];
+    }
     address = addr;
     burst = brst;
     rd_t.notify(RD_DELAY, SC_NS);
@@ -43,15 +49,18 @@ SC_MODULE (ram) {
   {
     while (true)
     {
+      wait(rd_t);
       if(burst == 0)
       {
-        data[0] = mem[addr];
+        printf("test\n");
+        data[0] = mem[address];
       } 
       else if(burst == 1)
       {
         for(int i; i < 4; i++)
         {
-          data[i] = mem[addr + i];
+          printf("Writting a 4-burst data");
+          data[i] = mem[address + i];
           wait(BURST_DELAY, SC_NS);
         }
       } 
@@ -59,7 +68,7 @@ SC_MODULE (ram) {
       {
         for(int i; i < 8; i++)
         {
-          data[i] = mem[addr + i];
+          data[i] = mem[address + i];
           wait(BURST_DELAY, SC_NS);
         }
       }
@@ -71,7 +80,9 @@ SC_MODULE (ram) {
       wait(wr_t);
       if (burst == 0)
       {
-        mem [address] = data;
+        printf("Single data write\n");
+        mem [address] = data[0];
+        
       }
       else if (burst == 1)
       {
