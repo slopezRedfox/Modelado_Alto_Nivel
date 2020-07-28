@@ -226,7 +226,7 @@ struct Cache : sc_module
 
                     socket_target->nb_transport_bw(*trans_pending, phase, delay_pending); // Non-blocking transport call
 
-            //********************************************************************************
+            /*//********************************************************************************
             //                     SOLO SE USA PARA PRUEBAS DE LA CACHE
             //********************************************************************************
             cout << endl;
@@ -238,7 +238,7 @@ struct Cache : sc_module
             }
             cout << endl;
             //********************************************************************************
-            //********************************************************************************
+            //**********************************************************************************/
         }
     }
 
@@ -267,12 +267,14 @@ struct Cache : sc_module
             // Verifica errores
             if (byt != 0)
             {
+                cout << "ERROR 1" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;   
                 trans.set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
                 return tlm::TLM_COMPLETED;
             }
 
             if (len > 4 || wid != 0)
             {
+                cout << "ERROR 2" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;   
                 trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
                 return tlm::TLM_COMPLETED;
             }
@@ -345,7 +347,7 @@ struct Cache : sc_module
             cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
 
             status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
-            
+            wait(aux_init);
             // Checkea el status de la transaccion   
             switch (status)
             {
@@ -376,8 +378,7 @@ struct Cache : sc_module
             }
             
             //Delay between RD/WR request
-            wait(100, SC_NS);   
-            
+            wait(0, SC_NS);   
         }
     }
     
@@ -400,16 +401,13 @@ struct Cache : sc_module
             if (trans.is_response_error() )   
                 SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
 
-            //Delay para BEGIN_RESP
-            wait(delay);
             cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
+            aux_init.notify();
             return tlm::TLM_ACCEPTED;
         } 
 
         else if (phase == tlm::END_RESP) 
         {
-            //Delay for END_RESP
-            wait(delay);
             cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
             initiator_done_t.notify();
             return tlm::TLM_COMPLETED;
@@ -540,10 +538,10 @@ struct Cache : sc_module
                 initiator_t.notify();
                 wait(initiator_done_t);
 
-                mem.sets[index].block[0].data[offset]  = address_Initiator;
+                mem.sets[index].block[0].data[offset]  = data_Initiator;
 
                 //Se copia el dato en 'data' y sale del bucle
-                memcpy(data, &address_Initiator, 4);            
+                memcpy(data, &data_Initiator, 4);            
             }
 
             else
@@ -634,6 +632,7 @@ struct Cache : sc_module
     bool comando_Initiator;
     sc_event initiator_t, initiator_done_t;
     ID_extension* id_extension_initiator = new ID_extension;
+    sc_event aux_init;
 };
 
 #endif

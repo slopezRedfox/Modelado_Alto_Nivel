@@ -128,7 +128,7 @@ struct Ram: sc_module {
                 socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );  // Non-blocking transport call
             
 
-            /*//********************************************************************************
+            //********************************************************************************
             //                     SOLO SE USA PARA PRUEBAS DE LA RAM 
             //********************************************************************************
             cout << endl;
@@ -152,11 +152,11 @@ struct Ram: sc_module {
             cout << endl;
 
             for (int j = add - 8; j < add + 8; j++){
-                cout << "Estimador TRANS ID " << id_extension->transaction_id << " Cel Num #" << hex << j << " | data: " << hex << mem[j] << endl;
+                cout << " TRANS ID " << id_extension->transaction_id << " Cel Num #" << hex << j << " | data: " << hex << mem[j] << endl;
             }
             cout << endl;
             //********************************************************************************
-            //*********************************************************************************/
+            //********************************************************************************
         }   
     }   
     

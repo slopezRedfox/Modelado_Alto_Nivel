@@ -1,5 +1,5 @@
-#ifndef INICIADOR_H
-#define INICIADOR_H
+#ifndef INICIADOR_2_H
+#define INICIADOR_2_H
 
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 
@@ -12,74 +12,20 @@ using namespace std;
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 
-//Direccion de registros de solo lectura del estimador
-#define Param_approx_1_Addr 0x43c00010
-#define Param_approx_2_Addr 0x43c00014
-#define Voltage_out         0x43c00018
-#define Current_out         0x43c0001c
-
-//Direcciones de registro de solo escritura del estimador
-#define I_scale_factor_Addr 0x43c00020
-#define V_scale_factor_Addr 0x43c00024
-#define Ig_value_Addr       0x43c00028
-#define Gamma11_Addr        0x43c0002c
-#define Gamma12_Addr        0x43c00030
-#define Gamma21_Addr        0x43c00038
-#define Gamma22_Addr        0x43c00040
-#define Init_alpha_Addr     0x43c00048
-#define Init_beta_Addr      0x43c00050
-#define T_sampling_Addr     0x43c00058
-#define Set_flag_Addr       0x43c00060
-
-//Constans from memory
-
-#define I_scale_factor    5
-#define V_scale_factor    22
-#define Ig                3.99
-#define GAMMA11           0.1
-#define GAMMA12           0
-#define GAMMA21           0
-#define GAMMA22           100
-#define INIT_ALPHA        0.55
-#define INIT_BETA         -13.0
-#define T_SAMPLING        1e-6
-#define Set_flag          1
-
-#define INT2U32(x) *(uint32_t*)&x
-
-
-// Initiator module generating generic payload transactions
-// User-defined extension class
-struct ID_extension: tlm::tlm_extension<ID_extension> {
-
-  ID_extension() : transaction_id(0) {}
-  virtual tlm_extension_base* clone() const { // Must override pure virtual clone method
-    ID_extension* t = new ID_extension;
-    t->transaction_id = this->transaction_id;
-    return t;
-  }
-
-  // Must override pure virtual copy_from method
-  virtual void copy_from(tlm_extension_base const &ext) {
-    transaction_id = static_cast<ID_extension const &>(ext).transaction_id;
-  }
-  unsigned int transaction_id;
-};
-
-// Controler
-struct Controler: sc_module {
+// Controler_2
+struct Controler_2: sc_module {
   
-  tlm_utils::simple_initiator_socket<Controler> socket_initiator;
-  tlm_utils::simple_target_socket<Controler>    socket_target;
+  tlm_utils::simple_initiator_socket<Controler_2> socket_initiator;
+  tlm_utils::simple_target_socket<Controler_2>    socket_target;
 
   // Constructor de Cotroler
-  SC_CTOR(Controler) : 
+  SC_CTOR(Controler_2) : 
     socket_initiator("socket_initiator"),
     socket_target("socket_to_target")
   {
     //Se tienen las funciones TLM2
-    socket_initiator.register_nb_transport_bw(this, &Controler::nb_transport_bw);
-    socket_target.register_nb_transport_fw(this, &Controler::nb_transport_fw);
+    socket_initiator.register_nb_transport_bw(this, &Controler_2::nb_transport_bw);
+    socket_target.register_nb_transport_fw(this, &Controler_2::nb_transport_fw);
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);
@@ -103,7 +49,11 @@ struct Controler: sc_module {
     ID_extension* id_extension = new ID_extension; //Se crea un ID con la clase anterior
     trans.set_extension( id_extension );
 
-    while(true){
+    for (int h = 0; h < 0xF000; h++){
+      id_extension->transaction_id++;
+    }
+
+    while(Exe == true){
       //Espera a que la funcion TB indique el comando y el dato a transmitir o leer
       wait(do_t.default_event());
 
@@ -121,10 +71,16 @@ struct Controler: sc_module {
       tlm::tlm_sync_enum status;
 
       wait( sc_time(10, SC_NS) );
-      cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
+      /*
+      cout << endl;
+      cout << "_____________________xxxx prueba" << endl;
+      cout << endl;
+      */
       status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
-      wait(aux);
+      wait(delay);
+      wait(auxC);
       // Checkea el status de la transaccion   
       switch (status)
       {
@@ -148,7 +104,7 @@ struct Controler: sc_module {
             SC_REPORT_ERROR("TLM2", "Response error from nb_transport_fw");   
 
           cout << endl;
-          cout  << "0 - "<< "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
+          cout  << "0 - " << " TRANS ID " << id_extension->transaction_id << "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
                 << hex << data << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
           cout << endl;
           
@@ -156,9 +112,9 @@ struct Controler: sc_module {
       }
 
       //Delay between RD/WR request
-      wait(auxC);
+      //
 
-      wait(10, SC_NS);   
+      wait(100, SC_NS);   
       
       id_extension->transaction_id++;
       done_tC.notify();
@@ -185,7 +141,7 @@ struct Controler: sc_module {
         SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
 
       cout << endl;
-      cout  << "0 - " 
+      cout << " TRANS ID " << id_extension->transaction_id  << " 0 - " 
             << "trans/bw = { " << (cmd ? 'W' : 'R') 
             << ", "            << hex << adr   
             << " } , data = "  << hex   << data_p 
@@ -195,8 +151,8 @@ struct Controler: sc_module {
       cout << endl;
 
       //Delay para BEGIN_RESP
-      aux.notify();
       cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      auxC.notify();
       return tlm::TLM_ACCEPTED;
     } 
 
@@ -205,7 +161,7 @@ struct Controler: sc_module {
       //Delay for END_RESP
       cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
       cout << "Listo" << endl;
-      auxC.notify();
+      //auxC.notify();
       return tlm::TLM_COMPLETED;
     }
 
@@ -359,203 +315,17 @@ struct Controler: sc_module {
   //                                   FUNCIONES TB
   //==============================================================================================
 
-
-  uint32_t to_fixed_32(float a){
-    a=a*pow(2,21);
-    int b = (int)a;
-    return INT2U32(b);
-  }
-
-  int write_data(int count){
-  switch(count){
-    case 0:
-      return I_scale_factor;
-      break;
-
-    case 1:
-      return V_scale_factor;
-      break;
-
-    case 2:
-      return Ig;
-      break;
-
-    case 3:
-      return GAMMA11;
-      break;
-
-    case 4:
-      return GAMMA12;
-      break;
-    
-    case 5:
-      return GAMMA21;
-      break;
-
-    case 6:
-      return GAMMA22;
-      break;
-
-    case 7:
-      return INIT_ALPHA;
-      break;
-
-    case 8:
-      return INIT_BETA;
-      break;
-
-    case 9:
-      return T_SAMPLING;
-      break;
-
-    case 10:
-      return Set_flag;
-      break;
-    
-    case 11:
-      return 0xAAAAAAAA;
-      break;
-  
-    case 12:
-      return 0xBBBBBBBB;
-      break;
-    
-    case 13:
-      return 0xCCCCCCCC;
-      break;
-
-    case 14:
-      return 0xDDDDDDDD;
-      break;
-
-    default:
-      return 0;
-      break;
-  }
-}
-
-  int write_Addr(int count){
-  switch(count){
-    case 0:
-      return I_scale_factor_Addr;
-      break;
-
-    case 1:
-      return V_scale_factor_Addr;
-      break;
-
-    case 2:
-      return Ig_value_Addr;
-      break;
-
-    case 3:
-      return Gamma11_Addr;
-      break;
-
-    case 4:
-      return Gamma12_Addr;
-      break;
-    
-    case 5:
-      return Gamma21_Addr;
-      break;
-
-    case 6:
-      return Gamma22_Addr;
-      break;
-
-    case 7:
-      return Init_alpha_Addr;
-      break;
-
-    case 8:
-      return Init_beta_Addr;
-      break;
-
-    case 9:
-      return T_sampling_Addr;
-      break;
-
-    case 10:
-      return Set_flag_Addr;
-      break;
-
-    case 11:
-      return Param_approx_1_Addr;
-      break;
-    
-    case 12:
-      return Param_approx_2_Addr;
-      break;
-
-    case 13:
-      return Voltage_out;
-      break;
-
-    case 14:
-      return Current_out;
-      break;
-    
-    default:
-      return 0;
-      break;
-
-    }
-}
-
-  int read_addr(int count){
-    switch (count)
-    {
-    case 0:
-        return Param_approx_1_Addr;
-        break;
-    
-    case 1:
-        return Param_approx_2_Addr;
-        break;
-
-    case 2:
-        return Voltage_out;
-        break;
-
-    case 3:
-        return Current_out;
-        break;
-
-    default:
-        return 0;
-        break;
-    }
-}
   
   void TB(){
     cout << endl;
     cout << endl;
 
-   /*
     comando = 1;
-    data    = 0x0000000A;
-         //                              offset
-         //  |      tag        |  index    | |
-    addrs  =0b00000000000000000000000000000000;
-    addrs  = addrs | 0xCA00000000;
-    do_t.notify(0,SC_NS);
-    wait(done_tC);
-
-    cout << endl;
-    cout << endl;
-    cout << "------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << endl;
-
-    wait(500, SC_NS);
-
-    comando = 1;
-    data    = 0x000000FA;
+    data    = 0xFF00000A;
          //                              offset
          //  |      tag        |  index    | |
     addrs  =0b00000000000000000000000000000001;
-    addrs  = addrs | 0xCA00000000;
+    addrs  = addrs | 0xBA00000000;
     do_t.notify(0,SC_NS);
     wait(done_tC);
 
@@ -564,72 +334,273 @@ struct Controler: sc_module {
     cout << "------------------------------------------------------------------------" << endl;
     cout << endl;
     cout << endl;
- */
-    sc_trace_file *wf = sc_create_vcd_trace_file("cpu");
-    wf->set_time_unit(1, SC_NS);
+    //wait(250,SC_NS);
+
+    /*
+    comando = 1;
+    data    = 0xFF00000B;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000011;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+/*
+    comando = 1;
+    data    = 0xFF00000C;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000011000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000E;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000001111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000F;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000011111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
     
-    // Dump the desired signals
-    sc_trace(wf, out[0], "param_1");
-    sc_trace(wf, out[1], "param_2");
-    sc_trace(wf, out[2], "volt");
-    sc_trace(wf, out[3], "current");
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-    cout << "@" << sc_time_stamp() << endl;
-    cout << "\nInicializador del estimador. \n";
+    comando = 1;
+    data    = 0xFF0000BF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
-    for (int i = 0; i < 15; i++)
-    {      
-      //Comunicacion
-      comando = 1;
-      data    = write_data(i);
-      addrs  = write_Addr(i);
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-    }
 
-    cout << "\nLectura de registro del estimador \n";
-    while(true)
-    {
-      for (int i = 0; i < 4; i++)
-      {
-        //Lectura
-        comando = 0;
-        data    = 0;
-        addrs  = read_addr(i);
-        addrs  = addrs | 0xCA00000000;
-        do_t.notify(0,SC_NS);
-        wait(done_tC);
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-        //Escritura en VCD
-        out[i] = (float)data/pow(2,21);
+    comando = 1;
+    data    = 0xFF0000DF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
-        cout << "Estimador ********CPU******* addrs: " << hex << addrs  << endl;
-        cout << "Estimador ********CPU******* data : " << hex << out[i] << endl;
-        
-        //Escritura
-        comando = 1;
-        data    = data;
-        addrs   = random_addrs;
-        addrs   = addrs | 0xCA00000000;
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-        do_t.notify(0,SC_NS);
-        wait(done_tC);
-        
-        if (random_addrs == 0x40000){
-          random_addrs = 0;
-        }
-        else{
-          random_addrs++;
-        }
-      }
-    }
+    comando = 1;
+    data    = 0xFF0000CF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000001000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+/*
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs = 0xCA43C00010;
+    //addrs  =0b01001100000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xBA00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF0000FD;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs = 0xCA43C00010;
+    //addrs  =0b01001100000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xBA00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    comando = 1;
+    data    = 0xA;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000100;
+    //addrs  = addrs | 0xAC00000000;
+    addrs  = addrs | 0xBC00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    comando = 1;
+    data    = 0xFF00000C;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000111000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000011111000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+  
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xA;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000100;
+    //addrs  = addrs | 0xAC00000000;
+    addrs  = addrs | 0xBC00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+*/
+    Exe = false;
   }
   
   
   // Internal data buffer used by initiator with generic payload
   sc_event_queue do_t;
-  sc_event  done_tC, aux, auxC;
+  sc_event  done_tC, auxC;
   int data;  
   long int addrs;
   bool comando;
@@ -641,10 +612,6 @@ struct Controler: sc_module {
   tlm::tlm_generic_payload* trans_pending;   
   tlm::tlm_phase phase_pending;   
   sc_time delay_pending;
-
-  //CPU
-  float out[4];
-  int random_addrs = 0;
 };
 
 
