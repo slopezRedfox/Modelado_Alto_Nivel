@@ -57,20 +57,20 @@ struct ID_extension: tlm::tlm_extension<ID_extension> {
   unsigned int transaction_id;
 };
 
-// Controler
-struct Controler: sc_module {
+// Modulo Estimador
+struct Estimador: sc_module {
   
-  tlm_utils::simple_initiator_socket<Controler> socket_initiator;
-  tlm_utils::simple_target_socket<Controler>    socket_target;
+  tlm_utils::simple_initiator_socket<Estimador> socket_initiator;
+  tlm_utils::simple_target_socket<Estimador>    socket_target;
 
   // Constructor de Cotroler
-  SC_CTOR(Controler) : 
+  SC_CTOR(Estimador) : 
     socket_initiator("socket_initiator"),
     socket_target("socket_to_target")
   {
     //Se tienen las funciones TLM2
-    socket_initiator.register_nb_transport_bw(this, &Controler::nb_transport_bw);
-    socket_target.register_nb_transport_fw(this, &Controler::nb_transport_fw);
+    socket_initiator.register_nb_transport_bw(this, &Estimador::nb_transport_bw);
+    socket_target.register_nb_transport_fw(this, &Estimador::nb_transport_fw);
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);

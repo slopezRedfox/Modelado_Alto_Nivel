@@ -35,8 +35,8 @@ SC_MODULE (estimador) {
 
   float init_cond_1, init_cond_2; 
   float p1, p2, p1_aux, p2_aux, y, I, V;
+  int I_int_est, V_int_est;
 
-  float H,L;
 
   // Constructor for estimador
   SC_HAS_PROCESS(estimador);
@@ -62,8 +62,11 @@ SC_MODULE (estimador) {
         init_cond_2 = INIT_BETA;
       };
 
-      I = adc_i.read() / pow(2,16);
-      V = adc_v.read() / pow(2,16);
+      I_int_est = (int)adc_i.read();
+      V_int_est = (int)adc_v.read();
+
+      I = (float)I_int_est / pow(2,16);
+      V = (float)V_int_est / pow(2,16);
 
       I *= I_scale_factor;
       V *= V_scale_factor;

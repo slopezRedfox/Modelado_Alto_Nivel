@@ -9,7 +9,8 @@ float segundos=5;
 float sample_rate=1e6;
 float step=1/sample_rate;
 float n_samples=segundos*sample_rate;
-float V_TB, I_TB;
+float V_TB, I_TB, I_float, V_float, P1_float, P2_float;
+int I_int, V_int, P1_int, P2_int;
 
 
 int sc_main (int argc, char* argv[]) {
@@ -68,7 +69,7 @@ int sc_main (int argc, char* argv[]) {
 
   cout << "step= " << step << endl;
   
-  for(int i = 0; i <100; i++){  
+  for(int i = 0; i < n_samples ; i++){  
 
     sc_start(50,SC_NS);
     start = 0;
@@ -78,8 +79,22 @@ int sc_main (int argc, char* argv[]) {
     adc_v = to_fixed_16(V_TB);
     adc_i = to_fixed_16(I_TB);
 
-    file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
-    file_Params << t << ","<< param_1 << ","<< param_2 << endl;
+    I_int = (int) current.read();
+    I_float = (float) I_int / pow(2,21);
+
+    V_int = (int) volt.read();
+    V_float = (float) V_int / pow(2,21);
+
+    P1_int = (int) param_1.read();
+    P1_float = (float) P1_int / pow(2,21);
+
+    P2_int = (int) param_2.read();
+    P2_float = (float) P2_int / pow(2,21);
+
+
+
+    file_Signals << t <<","<< I_float << ","<< V_float << endl;
+    file_Params << t << ","<< P1_float << ","<< P2_float << endl;
     t = t + step;
 
     cout << "@" << sc_time_stamp()<< endl;

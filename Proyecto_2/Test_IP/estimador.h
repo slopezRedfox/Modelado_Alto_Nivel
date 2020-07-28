@@ -57,20 +57,20 @@ struct ID_extension: tlm::tlm_extension<ID_extension> {
   unsigned int transaction_id;
 };
 
-// Controler
-struct Controler: sc_module {
+// Modulo Estimador
+struct Estimador: sc_module {
   
-  tlm_utils::simple_initiator_socket<Controler> socket_initiator;
-  tlm_utils::simple_target_socket<Controler>    socket_target;
+  tlm_utils::simple_initiator_socket<Estimador> socket_initiator;
+  tlm_utils::simple_target_socket<Estimador>    socket_target;
 
   // Constructor de Cotroler
-  SC_CTOR(Controler) : 
+  SC_CTOR(Estimador) : 
     socket_initiator("socket_initiator"),
     socket_target("socket_to_target")
   {
     //Se tienen las funciones TLM2
-    socket_initiator.register_nb_transport_bw(this, &Controler::nb_transport_bw);
-    socket_target.register_nb_transport_fw(this, &Controler::nb_transport_fw);
+    socket_initiator.register_nb_transport_bw(this, &Estimador::nb_transport_bw);
+    socket_target.register_nb_transport_fw(this, &Estimador::nb_transport_fw);
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);
@@ -394,8 +394,11 @@ struct Controler: sc_module {
         init_cond_2 = INIT_BETA;
       };
 
-      I = adc_i / pow(2,16);
-      V = adc_v / pow(2,16);
+      I_int_est = (int)adc_i;
+      V_int_est = (int)adc_v;
+
+      I = (float)I_int_est / pow(2,16);
+      V = (float)V_int_est / pow(2,16);
 
       I *= I_scale_factor;
       V *= V_scale_factor;
@@ -509,8 +512,22 @@ struct Controler: sc_module {
       adc_v = to_fixed_16(V_TB);
       adc_i = to_fixed_16(I_TB);
 
-      file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
-      file_Params << t << ","<< param_1 << ","<< param_2 << endl;
+      I_int = (int) current;
+      I_float = (float) I_int / pow(2,21);
+
+      V_int = (int) volt;
+      V_float = (float) V_int / pow(2,21);
+
+      P1_int = (int) param_1;
+      P1_float = (float) P1_int / pow(2,21);
+
+      P2_int = (int) param_2;
+      P2_float = (float) P2_int / pow(2,21);
+
+
+
+      file_Signals << t <<","<< I_float << ","<< V_float << endl;
+      file_Params << t << ","<< P1_float << ","<< P2_float << endl;
       t = t + step;
 
       cout << "@" << sc_time_stamp()<< endl;
@@ -563,16 +580,17 @@ struct Controler: sc_module {
 
   float init_cond_1, init_cond_2; 
   float p1, p2, p1_aux, p2_aux, y_log, I, V;
+  int I_int_est, V_int_est;
 
-  float Lambda = 3.99;                     	//Short-Circuit current
-  float Psi = 5.1387085e-6;                	//Is current (saturation)
-  float alpha = 0.625;                 			//Thermal voltage relation
+  float Lambda = 3.99;                      //Short-Circuit current
+  float Psi = 5.1387085e-6;                 //Is current (saturation)
+  float alpha = 0.625;                      //Thermal voltage relation
   float V_oc = 1/alpha*(log(Lambda/Psi));   //Open circuit voltage
-  float V_mpp = 17.4;                  			//Maximum power point voltage
-  float I_mpp = 3.75;                  			//Maximum power point current
-  float P_mpp = 65.25;                 			//Maximum power 
-  float y = log(Lambda);              			//Short-Circuit logarithm
-  float b = log(Psi);                 			//Is current logarithm
+  float V_mpp = 17.4;                       //Maximum power point voltage
+  float I_mpp = 3.75;                       //Maximum power point current
+  float P_mpp = 65.25;                      //Maximum power 
+  float y = log(Lambda);                    //Short-Circuit logarithm
+  float b = log(Psi);                       //Is current logarithm
   float V_cte = 16.69;
 
   float t = 0;
@@ -580,7 +598,8 @@ struct Controler: sc_module {
   float sample_rate=1e6;
   float step=1/sample_rate;
   float n_samples=segundos*sample_rate;
-  float V_TB, I_TB;
+  float V_TB, I_TB, I_float, V_float, P1_float, P2_float;
+  int I_int, V_int, P1_int, P2_int;
 };
 
 
