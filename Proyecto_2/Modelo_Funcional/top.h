@@ -3,7 +3,7 @@
 
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 
-#include "initiator.h"
+#include "cpu.h"
 #include "router.h"
 #include "cache.h"
 #include "ram.h"

@@ -19,6 +19,8 @@ using namespace std;
 #define wr_delay_ram 15
 #define rd_delay_ram 10
 
+#define DELAY_RAM 2
+
 //----------------------------------------------------------------------------------------------------------------------
 //Modulo de Ram
 
@@ -32,7 +34,7 @@ struct Ram: sc_module {
   SC_CTOR(Ram) : 
     socket_target("socket_target"), 
     socket_initiator("socket_initiator"),
-    LATENCY(10, SC_NS)
+    LATENCY(DELAY_RAM, SC_NS)
   {
     // Register callbacks for incoming interface method calls
     socket_target.register_nb_transport_fw(this, &Ram::nb_transport_fw);
@@ -89,7 +91,7 @@ struct Ram: sc_module {
 
             // Obliged to set response status to indicate successful completion   
             trans_pending->set_response_status( tlm::TLM_OK_RESPONSE );  
-            delay_pending= sc_time(10, SC_NS);
+            delay_pending= sc_time(DELAY_RAM, SC_NS);
 
             //********************************************************************************
             // SE MODIFICA SEGUN LO QUE SE NECESITE CUANDO SE VA A HACER LECTURAS/ESCRITURAS
@@ -113,15 +115,15 @@ struct Ram: sc_module {
             tlm::tlm_sync_enum status;
             phase  = tlm::BEGIN_RESP; 
             
-            wait( sc_time(10, SC_NS) );
+            wait( delay_pending );
             cout  << "1 - "   << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
             
             status = socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );   
+            wait( delay_pending );          
 
             switch (status)     
                 case tlm::TLM_ACCEPTED:   
                 
-                wait( sc_time(10, SC_NS) );          
                 cout  << "1 - "   << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
                 phase = tlm::END_RESP;
                 
@@ -179,7 +181,6 @@ struct Ram: sc_module {
         //
         // PRIMERA FASE DE LA TRANSACCION
         //
-
         if(phase == tlm::BEGIN_REQ){
             // Primero se pregunta si el dato a transmitir esta abilitado
             if (byt != 0) {
@@ -194,9 +195,6 @@ struct Ram: sc_module {
                 return tlm::TLM_COMPLETED;
             }
 
-            // Se pasa los datos a las variables globales de la estructura
-            // Que estan declaradas al final de la misma, para poder ser
-            // trabajados en la funcion thread
             trans_pending_queue.push(&trans);
             phase_pending_queue.push(phase);
             delay_pending_queue.push(delay);
@@ -205,8 +203,6 @@ struct Ram: sc_module {
             e1.notify(0, SC_NS);
             
             cout  << "1 - "   << name() << "    BEGIN_REQ  RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;            
-
-            //Se envia que la transaccion ha sido aceptada
             return tlm::TLM_ACCEPTED;
         }
 
@@ -217,9 +213,6 @@ struct Ram: sc_module {
         else if(phase == tlm::END_REQ){
 
             cout  << "1 - "   << name() << "    END_REQ    RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-            
-            //Se imprime que se termino el request
-            //Devuelve la confirmacion de que se TERMONO la transaccion
             return tlm::TLM_COMPLETED;
         }
 
@@ -238,7 +231,7 @@ struct Ram: sc_module {
     void thread_process_to_bw(){
         
         tlm::tlm_generic_payload trans;
-        sc_time delay = sc_time(10, SC_NS);
+        sc_time delay = sc_time(DELAY_RAM, SC_NS);
 
         while(false){
             wait(initiator_t);                
@@ -258,20 +251,19 @@ struct Ram: sc_module {
 
             tlm::tlm_sync_enum status;
 
-            wait( sc_time(10, SC_NS) );
+            wait( delay );
             cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
 
             status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
-            
-            // Checkea el status de la transaccion   
+            wait( delay );
+
             switch (status)
             {
                 case tlm::TLM_ACCEPTED:   
                 
-                    wait( sc_time(10, SC_NS) );
                     cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
                     phase = tlm::END_REQ; 
-                    
+        
                     status = socket_initiator->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
                     break;   
             
@@ -316,16 +308,12 @@ struct Ram: sc_module {
             if (trans.is_response_error() )   
                 SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
 
-            //Delay para BEGIN_RESP
-            //wait(delay);
             cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
             return tlm::TLM_ACCEPTED;
         } 
 
         else if (phase == tlm::END_RESP) 
         {
-            //Delay for END_RESP
-            wait(delay);
             cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
             initiator_done_t.notify();
             return tlm::TLM_COMPLETED;

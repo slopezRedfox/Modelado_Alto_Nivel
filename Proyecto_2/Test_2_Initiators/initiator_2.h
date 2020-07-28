@@ -1,14 +1,7 @@
-#ifndef INICIADOR_H
-#define INICIADOR_H
+#ifndef INICIADOR_2_H
+#define INICIADOR_2_H
 
 #define SC_INCLUDE_DYNAMIC_PROCESSES
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdint.h>
-#include <iostream>
-#include <fstream>
 
 #include "systemc"
 using namespace sc_core;
@@ -19,64 +12,26 @@ using namespace std;
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 
-#define calc_delay 0
-//Constans from memory
-
-#define I_scale_factor    5
-#define V_scale_factor    22
-#define Ig                3.99
-#define GAMMA11           0.1
-#define GAMMA12           0
-#define GAMMA21           0
-#define GAMMA22           100
-#define INIT_ALPHA        0.55
-#define INIT_BETA         -13.0
-#define T_SAMPLING        1e-6
-
-#define INT2U32(x) *(uint32_t*)&x
-#define INT2U16(x) *(uint16_t*)&x
-
-# define M_PI           3.14159265358979323846  /* pi */
-
-
-// Initiator module generating generic payload transactions
-// User-defined extension class
-struct ID_extension: tlm::tlm_extension<ID_extension> {
-
-  ID_extension() : transaction_id(0) {}
-  virtual tlm_extension_base* clone() const { // Must override pure virtual clone method
-    ID_extension* t = new ID_extension;
-    t->transaction_id = this->transaction_id;
-    return t;
-  }
-
-  // Must override pure virtual copy_from method
-  virtual void copy_from(tlm_extension_base const &ext) {
-    transaction_id = static_cast<ID_extension const &>(ext).transaction_id;
-  }
-  unsigned int transaction_id;
-};
-
-// Modulo Estimador
-struct Estimador: sc_module {
+// Controler_2
+struct Controler_2: sc_module {
   
-  tlm_utils::simple_initiator_socket<Estimador> socket_initiator;
-  tlm_utils::simple_target_socket<Estimador>    socket_target;
+  tlm_utils::simple_initiator_socket<Controler_2> socket_initiator;
+  tlm_utils::simple_target_socket<Controler_2>    socket_target;
 
   // Constructor de Cotroler
-  SC_CTOR(Estimador) : 
+  SC_CTOR(Controler_2) : 
     socket_initiator("socket_initiator"),
     socket_target("socket_to_target")
   {
     //Se tienen las funciones TLM2
-    socket_initiator.register_nb_transport_bw(this, &Estimador::nb_transport_bw);
-    socket_target.register_nb_transport_fw(this, &Estimador::nb_transport_fw);
+    socket_initiator.register_nb_transport_bw(this, &Controler_2::nb_transport_bw);
+    socket_target.register_nb_transport_fw(this, &Controler_2::nb_transport_fw);
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);
     SC_THREAD(thread_process_to_bw);  
+
     
-    SC_THREAD(estimador_main);
     SC_THREAD(TB);
   }
 
@@ -93,6 +48,10 @@ struct Estimador: sc_module {
 
     ID_extension* id_extension = new ID_extension; //Se crea un ID con la clase anterior
     trans.set_extension( id_extension );
+
+    for (int h = 0; h < 0xF000; h++){
+      id_extension->transaction_id++;
+    }
 
     while(Exe == true){
       //Espera a que la funcion TB indique el comando y el dato a transmitir o leer
@@ -112,7 +71,7 @@ struct Estimador: sc_module {
       tlm::tlm_sync_enum status;
 
       wait( sc_time(10, SC_NS) );
-      cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
       /*
       cout << endl;
@@ -120,7 +79,8 @@ struct Estimador: sc_module {
       cout << endl;
       */
       status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
-
+      wait(delay);
+      wait(auxC);
       // Checkea el status de la transaccion   
       switch (status)
       {
@@ -129,7 +89,6 @@ struct Estimador: sc_module {
           wait( sc_time(10, SC_NS) );
           cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
           phase = tlm::END_REQ; 
-
 
           status = socket_initiator->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
 
@@ -145,7 +104,7 @@ struct Estimador: sc_module {
             SC_REPORT_ERROR("TLM2", "Response error from nb_transport_fw");   
 
           cout << endl;
-          cout  << "0 - "<< "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
+          cout  << "0 - " << " TRANS ID " << id_extension->transaction_id << "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
                 << hex << data << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
           cout << endl;
           
@@ -153,7 +112,7 @@ struct Estimador: sc_module {
       }
 
       //Delay between RD/WR request
-      wait(auxC);
+      //
 
       wait(100, SC_NS);   
       
@@ -182,7 +141,7 @@ struct Estimador: sc_module {
         SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
 
       cout << endl;
-      cout  << "0 - " 
+      cout << " TRANS ID " << id_extension->transaction_id  << " 0 - " 
             << "trans/bw = { " << (cmd ? 'W' : 'R') 
             << ", "            << hex << adr   
             << " } , data = "  << hex   << data_p 
@@ -192,18 +151,17 @@ struct Estimador: sc_module {
       cout << endl;
 
       //Delay para BEGIN_RESP
-      wait(delay);
       cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      auxC.notify();
       return tlm::TLM_ACCEPTED;
     } 
 
     else if (phase == tlm::END_RESP) {  
            
       //Delay for END_RESP
-      wait(delay);
       cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
       cout << "Listo" << endl;
-      auxC.notify();
+      //auxC.notify();
       return tlm::TLM_COMPLETED;
     }
 
@@ -357,175 +315,285 @@ struct Estimador: sc_module {
   //                                   FUNCIONES TB
   //==============================================================================================
 
-  float InputVoltage(float t){
-    return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
-  }
-
-  float InputCurrent(float t){
-    return (Lambda - exp( alpha * InputVoltage(t) + b));
-  }
-
-  uint16_t to_fixed_16(float a){
-    a=a*pow(2,16);
-    int b = (int)a;
-    return INT2U16(b);
-  }
-
-  uint32_t to_fixed_32(float a){
-    a=a*pow(2,21);
-    int b = (int)a;
-    return INT2U32(b);
-  }
-
-  //Datos listos
-  void process_sample() {
-    calc_t.notify(calc_delay, SC_NS);
-  }
-
-  void estimador_main(){
-
-    while(true){
-
-      wait(calc_t);
-
-      if(start){
-        cout << "Hola mundo" << endl;
-        init_cond_1 = INIT_ALPHA;
-        init_cond_2 = INIT_BETA;
-      };
-
-      I = adc_i / pow(2,16);
-      V = adc_v / pow(2,16);
-
-      I *= I_scale_factor;
-      V *= V_scale_factor;
-      y_log = log(Ig - I);
-      p1=((GAMMA11*V+GAMMA12)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_1;
-      p2=((GAMMA21*V+GAMMA22)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_2;
-      init_cond_1=p1;
-      init_cond_2=p2;
-
-      cout<<"param_1 = "<< p1 <<"   param_2 = "<< p2 <<endl<<endl;
-
-      param_1 = to_fixed_32(p1);
-      cout << "MIRAME" << endl;
-      cout << hex << param_1 << endl;
-      //Comunicacion
-      comando = 1;
-      data    = param_1;
-      addrs  = 0x43C00010;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-
-      param_2 = to_fixed_32(p2);
-      cout << "MIRAME" << endl;
-      cout << hex << param_2 << endl;
-      comando = 1;
-      data    = param_2;
-      addrs  = 0x43C00014;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-
-      volt = to_fixed_32(V);
-      cout << "MIRAME" << endl;
-      cout << hex << volt << endl;
-      comando = 1;
-      data    = volt;
-      addrs  = 0x43C00018;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-
-      current = to_fixed_32(I);
-      cout << "MIRAME" << endl;
-      cout << hex << current << endl;
-      comando = 1;
-      data    = current;
-      addrs  = 0x43C0001C;
-      addrs  = addrs | 0xCA00000000;
-      do_t.notify(0,SC_NS);
-      wait(done_tC);
-      
-      wait(1,SC_NS);
-      done_tt.notify();
-    }
-  }
-
+  
   void TB(){
-    /*
-    //Lectura
-    comando = 0;
-    data    = 0;  //Cualquier cosa
-    addrs  = 0x43C00018;
-    addrs  = addrs | 0xCA00000000;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000A;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000001;
+    addrs  = addrs | 0xBA00000000;
     do_t.notify(0,SC_NS);
     wait(done_tC);
 
-    start = data; //Debe INT o hacer cambio
-    //Fin de lectura*/
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+    //wait(250,SC_NS);
+
+    /*
+    comando = 1;
+    data    = 0xFF00000B;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000011;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
     cout << endl;
     cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+/*
+    comando = 1;
+    data    = 0xFF00000C;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000011000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000E;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000001111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000F;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000011111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
     
-    // Open VCD file
-    sc_trace_file *wf = sc_create_vcd_trace_file("estimador");
-    wf->set_time_unit(1, SC_NS);
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-    //open CSV file
-    std::ofstream file_Signals;
-    file_Signals.open ("SIGNALS.CSV");
-    std::ofstream file_Params;
-    file_Params.open ("PARAMS.CSV");
-    
-    // Dump the desired signals
-    sc_trace(wf, adc_v, "adc_v");
-    sc_trace(wf, adc_i, "adc_i");
-    sc_trace(wf, start, "start");
-    sc_trace(wf, param_1, "param_1");
-    sc_trace(wf, param_2, "param_2");
-    sc_trace(wf, volt, "volt");
-    sc_trace(wf, current, "current");
+    comando = 1;
+    data    = 0xFF0000BF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
-    //Inicio del test
-    
-    cout << "@" << sc_time_stamp()<< endl;
-    start = 1;
-    adc_v = 0;
-    adc_i = 0;
-    process_sample();
-    wait(done_tt);
-    printf("first\n");
 
-    //cout << "step= " << step << endl;
-    
-    for(int i = 0; i <1; i++){  
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-      start = 0;
-      V_TB = InputVoltage(t)/22;
-      I_TB = InputCurrent(t)/5;
+    comando = 1;
+    data    = 0xFF0000DF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000001111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
-      adc_v = to_fixed_16(V_TB);
-      adc_i = to_fixed_16(I_TB);
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
 
-      file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
-      file_Params << t << ","<< param_1 << ","<< param_2 << endl;
-      t = t + step;
+    comando = 1;
+    data    = 0xFF0000CF;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000111111000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
 
-      cout << "@" << sc_time_stamp()<< endl;
-      process_sample();
-      cout<< "iter = "<<i<<endl;
-      wait(done_tt);
-    }
-    
-    cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
-    
-    //Close files
-    sc_close_vcd_trace_file(wf);
-    file_Signals.close();
-    file_Params.close(); 
 
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000001000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000001;
+    addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+/*
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs = 0xCA43C00010;
+    //addrs  =0b01001100000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xBA00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    cout << endl;
+    cout << endl;
+    cout << "------------------------------------------------------------------------" << endl;
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF0000FD;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs = 0xCA43C00010;
+    //addrs  =0b01001100000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xBA00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify(0,SC_NS);
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    comando = 1;
+    data    = 0xA;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000100;
+    //addrs  = addrs | 0xAC00000000;
+    addrs  = addrs | 0xBC00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+
+    comando = 1;
+    data    = 0xFF00000C;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000111000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xFF00000D;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000011111000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+  
+    comando = 0;
+    data    = 0xFF000000;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000011000000000000000;
+    //addrs  = addrs | 0xAB00000000;
+    addrs  = addrs | 0xCB00000000;
+    //addrs  = addrs | 0xBA00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+
+    comando = 1;
+    data    = 0xA;
+         //                              offset
+         //  |      tag        |  index    | |
+    addrs  =0b00000000000000000000000000000100;
+    //addrs  = addrs | 0xAC00000000;
+    addrs  = addrs | 0xBC00000000;
+    do_t.notify();
+    wait(done_tC);
+    cout << endl;
+    cout << endl;
+*/
     Exe = false;
   }
   
@@ -544,43 +612,6 @@ struct Estimador: sc_module {
   tlm::tlm_generic_payload* trans_pending;   
   tlm::tlm_phase phase_pending;   
   sc_time delay_pending;
-
-
-  //Variables del IP
-  //-----------IP Ports----------------------------------
-  sc_uint<16> adc_v; // vector data from XADC
-  sc_uint<16> adc_i; // vector data from XADC
-
-  bool  start;      // Active high, ready signal from estimador
-  sc_uint<32> param_1; // 32 bit vector output of the estimador
-  sc_uint<32> param_2; // 32 bit vector output of the estimador
-  sc_uint<32> volt;
-  sc_uint<32> current;
-  
-  
-  //-----------Internal variables------------------------
-  sc_event calc_t, done_tt;
-
-  float init_cond_1, init_cond_2; 
-  float p1, p2, p1_aux, p2_aux, y_log, I, V;
-
-  float Lambda = 3.99;                     	//Short-Circuit current
-  float Psi = 5.1387085e-6;                	//Is current (saturation)
-  float alpha = 0.625;                 			//Thermal voltage relation
-  float V_oc = 1/alpha*(log(Lambda/Psi));   //Open circuit voltage
-  float V_mpp = 17.4;                  			//Maximum power point voltage
-  float I_mpp = 3.75;                  			//Maximum power point current
-  float P_mpp = 65.25;                 			//Maximum power 
-  float y = log(Lambda);              			//Short-Circuit logarithm
-  float b = log(Psi);                 			//Is current logarithm
-  float V_cte = 16.69;
-
-  float t = 0;
-  float segundos=3;
-  float sample_rate=1e6;
-  float step=1/sample_rate;
-  float n_samples=segundos*sample_rate;
-  float V_TB, I_TB;
 };
 
 

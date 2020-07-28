@@ -3,22 +3,21 @@
 
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 
-#include "initiator.h"
-//#include "dummy.h"
+#include "estimador.h"
 #include "ram.h"
 
 SC_MODULE(Top)   
 {   
-    Controler *controler;
+    Estimador *estimador;
     Ram     *ram;
 
     SC_CTOR(Top)
     {
-        controler = new Controler("controler");
+        estimador = new Estimador("estimador");
         ram   = new Ram    ("ram");   
 
-        controler->socket_initiator.bind(ram  ->socket_target);
-        ram      ->socket_initiator.bind(controler->socket_target);
+        estimador->socket_initiator.bind(ram  ->socket_target);
+        ram      ->socket_initiator.bind(estimador->socket_target);
     }
 };
 

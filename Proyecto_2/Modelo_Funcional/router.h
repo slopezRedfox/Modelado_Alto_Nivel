@@ -13,6 +13,8 @@ using namespace std;
 #include "tlm_utils/simple_target_socket.h"
 #include <queue>
 
+#define DELAY_ROUTER 1
+
 // *********************************************
 // Generic payload blocking transport router
 // *********************************************
@@ -155,11 +157,13 @@ struct Router: sc_module{
             return tlm::TLM_ACCEPTED;
         }
 
-        else if (phase == tlm::END_RESP) { 
+        else if (phase == tlm::END_RESP)
+        { 
             return tlm::TLM_COMPLETED;
         }
 
-        else{
+        else
+        {
             return tlm::TLM_COMPLETED;
         }
     }
@@ -237,7 +241,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "T_bw  A Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Initiator #" << hex << initiator_nr << ")" << endl;
         
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_bw_A.push(socket_target_A->nb_transport_bw(*trans, phase, delay));
 
             target_nr = decode_address_T( trans->get_address());
@@ -268,7 +272,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "T_bw  B Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Initiator #" << hex << initiator_nr << ")" << endl;
 
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_bw_B.push(socket_target_B->nb_transport_bw(*trans, phase, delay));
 
             target_nr = decode_address_T( trans->get_address());
@@ -299,7 +303,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "T_bw  C Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Initiator #" << hex << initiator_nr << ")" << endl;
             
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_bw_C.push(socket_target_C->nb_transport_bw(*trans, phase, delay));
 
             target_nr = decode_address_T( trans->get_address());
@@ -377,6 +381,7 @@ struct Router: sc_module{
         unsigned int target_nr = decode_address_T( trans.get_address());
         unsigned int initiator_nr = decode_address_I( trans.get_address());
         cout << "tlm_f B Receive into Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Initiator #" << hex << initiator_nr << " -> Router)" << endl;
+        
         tlm::tlm_generic_payload* trans_pending;
 
         if(target_nr == 0xA)
@@ -428,21 +433,22 @@ struct Router: sc_module{
         unsigned int target_nr = decode_address_T( trans.get_address());
         unsigned int initiator_nr = decode_address_I( trans.get_address());
         cout << "tlm_f C Receive into Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Initiator #" << hex << initiator_nr << " -> Router)" << endl;
+        
         tlm::tlm_generic_payload* trans_pending;
 
-        if(target_nr == 0xB)
-        {
-            trans_fw_B.push(&trans);
-            phase_fw_B.push(phase);
-            delay_fw_B.push(delay);
-            fw_t_B.notify(0,SC_NS);
-        }
-        else if (target_nr == 0xA)
+        if (target_nr == 0xA)
         {
             trans_fw_A.push(&trans);
             phase_fw_A.push(phase);
             delay_fw_A.push(delay);
             fw_t_A.notify(0,SC_NS);
+        }
+        else if(target_nr == 0xB)
+        {
+            trans_fw_B.push(&trans);
+            phase_fw_B.push(phase);
+            delay_fw_B.push(delay);
+            fw_t_B.notify(0,SC_NS);
         }
 
         else
@@ -492,7 +498,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "t_fw  A Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Target #" << hex << target_nr << ")" << endl;
             
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_fw_A.push(socket_initiator_A->nb_transport_fw(*trans, phase, delay));
             
             target_nr = decode_address_T( trans->get_address());
@@ -500,7 +506,6 @@ struct Router: sc_module{
             cout << "t_fw  A Receive into Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Target #" << hex << target_nr << "    -> Router)" << endl;
             cout << "t_fw  A Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Initiator #" << hex << initiator_nr << ")" << endl;
         }
-
     }
 
     // Enviar paquete a Target B desde Iniciador
@@ -525,7 +530,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "t_fw  B Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Target #" << hex << target_nr << ")" << endl;
 
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_fw_B.push(socket_initiator_B->nb_transport_fw(*trans, phase, delay));
 
             target_nr = decode_address_T( trans->get_address());
@@ -557,7 +562,7 @@ struct Router: sc_module{
             unsigned int initiator_nr = decode_address_I( trans->get_address());
             cout << "t_fw  C Send    from Router " << name() << " TRANS ID " << hex << id_extension->transaction_id << " at time " << sc_time_stamp() << " (Router       -> Target #" << hex << target_nr << ")" << endl;
 
-            wait(delay);
+            wait(DELAY_ROUTER, SC_NS);
             status_fw_C.push(socket_initiator_C->nb_transport_fw(*trans, phase, delay));
 
             target_nr = decode_address_T( trans->get_address());

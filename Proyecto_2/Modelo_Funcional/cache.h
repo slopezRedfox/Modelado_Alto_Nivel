@@ -82,15 +82,17 @@ using namespace std;
 //Constantes de memoria cache
 #define wr_delay 5
 #define rd_delay 2
-#define wr_miss_delay 2
+#define wr_miss_delay 1
 #define cln_delay 5
-#define pen_delay 100
+#define pen_delay 10
 
 #define sets_n 4096
 #define ways_n 8
 #define block_n 4
 
 #define RAM 0xAB00000000
+
+#define DELAY_CACHE 2
 
 //----------------------------------------------------------------------------------------------------------------------
 //Clases usadas para memoria cache
@@ -134,7 +136,7 @@ struct Cache : sc_module
     SC_CTOR(Cache) : 
         socket_target("socket_target"), 
         socket_initiator("socket_initiator"),
-        LATENCY(10, SC_NS)
+        LATENCY(DELAY_CACHE, SC_NS)
     {
         // Register callbacks for incoming interface method calls
         socket_target.register_nb_transport_fw(this, &Cache::nb_transport_fw);
@@ -181,7 +183,7 @@ struct Cache : sc_module
 
             // Obliged to set response status to indicate successful completion
             trans_pending->set_response_status(tlm::TLM_OK_RESPONSE);
-            delay_pending = sc_time(10, SC_NS);
+            delay_pending = sc_time(DELAY_CACHE, SC_NS);
 
             //********************************************************************************
             // SE MODIFICA SEGUN LO QUE SE NECESITE CUANDO SE VA A HACER LECTURAS/ESCRITURAS
@@ -212,15 +214,15 @@ struct Cache : sc_module
             tlm::tlm_sync_enum status;
             phase = tlm::BEGIN_RESP;
 
-            wait(sc_time(10, SC_NS));
+            wait(delay_pending);
             cout << "1 - " << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
             status = socket_target->nb_transport_bw(*trans_pending, phase, delay_pending);
+            wait(delay_pending);
 
             switch (status)
                 case tlm::TLM_ACCEPTED:
 
-                    wait(sc_time(10, SC_NS));
                     cout << "1 - " << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
                     phase = tlm::END_RESP;
 
@@ -323,14 +325,14 @@ struct Cache : sc_module
     void thread_process_to_bw(){
         
         tlm::tlm_generic_payload trans;
-        sc_time delay = sc_time(10, SC_NS);
+        sc_time delay = sc_time(DELAY_CACHE, SC_NS);
 
-        while(true){
+        while(true)
+        {
             wait(initiator_t);                
 
             trans.set_extension( id_extension_initiator );
 
-            //PHASE == BEGIN_REQ
             tlm::tlm_phase phase = tlm::BEGIN_REQ;
             tlm::tlm_command cmd = static_cast<tlm::tlm_command>(comando_Initiator); //comando_Initiator = (0 read, 1 write)
             
@@ -343,17 +345,18 @@ struct Cache : sc_module
 
             tlm::tlm_sync_enum status;
 
-            wait( sc_time(10, SC_NS) );
+            wait( delay );
             cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
 
             status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
+
+            wait( delay );
             wait(aux_init);
-            // Checkea el status de la transaccion   
+
             switch (status)
             {
                 case tlm::TLM_ACCEPTED:   
                 
-                    wait( sc_time(10, SC_NS) );
                     cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension_initiator->transaction_id << " at time " << sc_time_stamp() << endl;
                     phase = tlm::END_REQ; 
                     
@@ -373,7 +376,6 @@ struct Cache : sc_module
                     cout  << "0 - "<< "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
                             << hex << data_Initiator << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
                     cout << endl;
-
                     break;   
             }
             
@@ -499,7 +501,7 @@ struct Cache : sc_module
                     {
                         if (i == ways_n - 1)
                         {
-                            wait(i * wr_miss_delay + cln_delay, SC_NS);
+                            wait(i * wr_miss_delay, SC_NS);
                             reorder(i, tag, index, offset, data_aux);
                             mem.sets[index].block[0].data[offset]  = data_aux;
                             data_Initiator = data_aux;  

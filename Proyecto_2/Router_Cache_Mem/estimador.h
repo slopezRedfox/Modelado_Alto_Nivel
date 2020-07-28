@@ -1,5 +1,5 @@
-#ifndef INICIADOR_H
-#define INICIADOR_H
+#ifndef ESTIMADOR_H
+#define ESTIMADOR_H
 
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 
@@ -38,26 +38,7 @@ using namespace std;
 
 # define M_PI           3.14159265358979323846  /* pi */
 
-
-// Initiator module generating generic payload transactions
-// User-defined extension class
-struct ID_extension: tlm::tlm_extension<ID_extension> {
-
-  ID_extension() : transaction_id(0) {}
-  virtual tlm_extension_base* clone() const { // Must override pure virtual clone method
-    ID_extension* t = new ID_extension;
-    t->transaction_id = this->transaction_id;
-    return t;
-  }
-
-  // Must override pure virtual copy_from method
-  virtual void copy_from(tlm_extension_base const &ext) {
-    transaction_id = static_cast<ID_extension const &>(ext).transaction_id;
-  }
-  unsigned int transaction_id;
-};
-
-// Modulo Estimador
+// Estimador
 struct Estimador: sc_module {
   
   tlm_utils::simple_initiator_socket<Estimador> socket_initiator;
@@ -94,7 +75,11 @@ struct Estimador: sc_module {
     ID_extension* id_extension = new ID_extension; //Se crea un ID con la clase anterior
     trans.set_extension( id_extension );
 
-    while(Exe == true){
+    for (int i = 0; i<0xF000000; i++){
+      id_extension->transaction_id++;
+    }
+
+    while(true){
       //Espera a que la funcion TB indique el comando y el dato a transmitir o leer
       wait(do_t.default_event());
 
@@ -114,25 +99,19 @@ struct Estimador: sc_module {
       wait( sc_time(10, SC_NS) );
       cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
-      /*
-      cout << endl;
-      cout << "_____________________xxxx prueba" << endl;
-      cout << endl;
-      */
       status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
+      wait( sc_time(10, SC_NS) );
+      wait(auxC);
 
       // Checkea el status de la transaccion   
       switch (status)
       {
         case tlm::TLM_ACCEPTED:   
           
-          wait( sc_time(10, SC_NS) );
           cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
           phase = tlm::END_REQ; 
 
-
           status = socket_initiator->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
-
           break;   
       
         case tlm::TLM_UPDATED:
@@ -148,14 +127,11 @@ struct Estimador: sc_module {
           cout  << "0 - "<< "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
                 << hex << data << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
           cout << endl;
-          
           break;   
       }
 
       //Delay between RD/WR request
-      wait(auxC);
-
-      wait(100, SC_NS);   
+      wait(160, SC_NS);   
       
       id_extension->transaction_id++;
       done_tC.notify();
@@ -192,18 +168,15 @@ struct Estimador: sc_module {
       cout << endl;
 
       //Delay para BEGIN_RESP
-      wait(delay);
       cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      auxC.notify();
       return tlm::TLM_ACCEPTED;
     } 
 
     else if (phase == tlm::END_RESP) {  
            
       //Delay for END_RESP
-      wait(delay);
       cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      cout << "Listo" << endl;
-      auxC.notify();
       return tlm::TLM_COMPLETED;
     }
 
@@ -408,63 +381,46 @@ struct Estimador: sc_module {
       cout<<"param_1 = "<< p1 <<"   param_2 = "<< p2 <<endl<<endl;
 
       param_1 = to_fixed_32(p1);
-      cout << "MIRAME" << endl;
-      cout << hex << param_1 << endl;
-      //Comunicacion
+      cout << "Estimador p1: " << hex << p1 << endl;
       comando = 1;
       data    = param_1;
       addrs  = 0x43C00010;
-      addrs  = addrs | 0xCA00000000;
+      addrs  = addrs | 0xCB00000000;
       do_t.notify(0,SC_NS);
       wait(done_tC);
 
       param_2 = to_fixed_32(p2);
-      cout << "MIRAME" << endl;
-      cout << hex << param_2 << endl;
+      cout << "Estimador p2: " << param_2 << endl;
       comando = 1;
       data    = param_2;
       addrs  = 0x43C00014;
-      addrs  = addrs | 0xCA00000000;
+      addrs  = addrs | 0xCB00000000;
       do_t.notify(0,SC_NS);
       wait(done_tC);
 
       volt = to_fixed_32(V);
-      cout << "MIRAME" << endl;
-      cout << hex << volt << endl;
+      cout << "Estimador V: " << volt << endl;
       comando = 1;
       data    = volt;
       addrs  = 0x43C00018;
-      addrs  = addrs | 0xCA00000000;
+      addrs  = addrs | 0xCB00000000;
       do_t.notify(0,SC_NS);
       wait(done_tC);
 
       current = to_fixed_32(I);
-      cout << "MIRAME" << endl;
-      cout << hex << current << endl;
+      cout << "Estimador I: " << current << endl;
       comando = 1;
       data    = current;
       addrs  = 0x43C0001C;
-      addrs  = addrs | 0xCA00000000;
+      addrs  = addrs | 0xCB00000000;
       do_t.notify(0,SC_NS);
       wait(done_tC);
       
-      wait(1,SC_NS);
       done_tt.notify();
     }
   }
 
   void TB(){
-    /*
-    //Lectura
-    comando = 0;
-    data    = 0;  //Cualquier cosa
-    addrs  = 0x43C00018;
-    addrs  = addrs | 0xCA00000000;
-    do_t.notify(0,SC_NS);
-    wait(done_tC);
-
-    start = data; //Debe INT o hacer cambio
-    //Fin de lectura*/
 
     cout << endl;
     cout << endl;
@@ -500,7 +456,7 @@ struct Estimador: sc_module {
 
     //cout << "step= " << step << endl;
     
-    for(int i = 0; i <1; i++){  
+    for(int i = 0; i < 4000; i++){  
 
       start = 0;
       V_TB = InputVoltage(t)/22;
@@ -513,9 +469,9 @@ struct Estimador: sc_module {
       file_Params << t << ","<< param_1 << ","<< param_2 << endl;
       t = t + step;
 
-      cout << "@" << sc_time_stamp()<< endl;
+      cout << "Estimador1 " << "@" << sc_time_stamp()<< endl;
       process_sample();
-      cout<< "iter = "<<i<<endl;
+      cout << "Estimador1 " << dec << "iter = "<<i<<endl;
       wait(done_tt);
     }
     
@@ -529,15 +485,15 @@ struct Estimador: sc_module {
     Exe = false;
   }
   
+  //Variables TB
+  bool Exe = true;
   
-  // Internal data buffer used by initiator with generic payload
+  //Variables de Iniciador
   sc_event_queue do_t;
   sc_event  done_tC, auxC;
   int data;  
   long int addrs;
-  bool comando;
-  
-  bool Exe = true;
+  bool comando;  
 
   //Variables de puerto Target
   sc_event  target_t; 
@@ -551,12 +507,11 @@ struct Estimador: sc_module {
   sc_uint<16> adc_v; // vector data from XADC
   sc_uint<16> adc_i; // vector data from XADC
 
-  bool  start;      // Active high, ready signal from estimador
+  bool  start;         // Active high, ready signal from estimador
   sc_uint<32> param_1; // 32 bit vector output of the estimador
   sc_uint<32> param_2; // 32 bit vector output of the estimador
   sc_uint<32> volt;
   sc_uint<32> current;
-  
   
   //-----------Internal variables------------------------
   sc_event calc_t, done_tt;
