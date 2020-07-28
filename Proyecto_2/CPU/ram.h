@@ -381,12 +381,12 @@ struct Ram: sc_module {
     int data_aux;
     
     int mem[SIZE];
-
+/*
     mem[0x43c00010] = 0xFFFFFFFF;
     mem[0x43c00014] = 0xAAAAAAAA;
     mem[0x43c00018] = 0xBBBBBBBB;
     mem[0x43c0001c] = 0xCCCCCCCC;
-
+*/
     sc_event wr_t, rd_t;
     sc_uint<32> address;
     unsigned char* data;

@@ -92,9 +92,8 @@ struct Controler: sc_module {
 
     //Se tiene las funciones recurrente
     SC_THREAD(thread_process_to_fw);
-    SC_THREAD(thread_process_to_bw);  
-    
-    SC_THREAD(estimador_main);
+    SC_THREAD(thread_process_to_bw); 
+
     SC_THREAD(TB);
   }
 
@@ -382,125 +381,140 @@ struct Controler: sc_module {
     return INT2U32(b);
   }
 
-  //Datos listos
-  void process_sample() {
-    calc_t.notify(calc_delay, SC_NS);
-  }
 
 int write_data(int count){
   switch(count){
+    case 0:
+      return I_scale_factor;
+      break;
 
-      case 0:
-          return I_scale_factor;
+    case 1:
+      return V_scale_factor;
+      break;
 
-          break;
+    case 2:
+      return Ig;
+      break;
 
-      case 1:
-          return V_scale_factor;
-          break;
+    case 3:
+      return GAMMA11;
+      break;
 
-      case 2:
-          return Ig;
-          break;
+    case 4:
+      return GAMMA12;
+      break;
+    
+    case 5:
+      return GAMMA21;
+      break;
 
-      case 3:
-          return GAMMA11;
-          break;
+    case 6:
+      return GAMMA22;
+      break;
 
-      case 4:
-          return GAMMA12;
-          break;
-      
-      case 5:
-          return GAMMA21;
-          break;
+    case 7:
+      return INIT_ALPHA;
+      break;
 
-      case 6:
-          return GAMMA22;
-          break;
+    case 8:
+      return INIT_BETA;
+      break;
 
-      case 7:
-          return INIT_ALPHA;
-          break;
+    case 9:
+      return T_SAMPLING;
+      break;
 
-      case 8:
-          return INIT_BETA;
-          break;
+    case 10:
+      return Set_flag;
+      break;
+    
+    case 11:
+      return 0xAAAAAAAA;
+      break;
+  
+    case 12:
+      return 0xBBBBBBBB;
+      break;
+    
+    case 13:
+      return 0xCCCCCCCC;
+      break;
 
-      case 9:
-          return T_SAMPLING;
-          break;
+    case 14:
+      return 0xDDDDDDDD;
+      break;
 
-      case 10:
-          return Set_flag;
-          break;
-      
-      default:
-          return 0;
-          break;
+    default:
+      return 0;
+      break;
   }
 }
 
 int write_Addr(int count){
-    switch(count){
-        case 0:
-            return I_scale_factor_Addr;
-            done_tt.notify();
-            break;
+  switch(count){
+    case 0:
+      return I_scale_factor_Addr;
+      break;
 
-        case 1:
-            return V_scale_factor_Addr;
-            done_tt.notify();
-            break;
+    case 1:
+      return V_scale_factor_Addr;
+      break;
 
-        case 2:
-            return Ig_value_Addr;
-            done_tt.notify();
-            break;
+    case 2:
+      return Ig_value_Addr;
+      break;
 
-        case 3:
-            return Gamma11_Addr;
-            done_tt.notify();
-            break;
+    case 3:
+      return Gamma11_Addr;
+      break;
 
-        case 4:
-            return Gamma12_Addr;
-            done_tt.notify();
-            break;
-        
-        case 5:
-            return Gamma21_Addr;
-            done_tt.notify();
-            break;
+    case 4:
+      return Gamma12_Addr;
+      break;
+    
+    case 5:
+      return Gamma21_Addr;
+      break;
 
-        case 6:
-            return Gamma22_Addr;
-            done_tt.notify();
-            break;
+    case 6:
+      return Gamma22_Addr;
+      break;
 
-        case 7:
-            return Init_alpha_Addr;
-            done_tt.notify();
-            break;
+    case 7:
+      return Init_alpha_Addr;
+      break;
 
-        case 8:
-            return Init_beta_Addr;
-            done_tt.notify();
-            break;
+    case 8:
+      return Init_beta_Addr;
+      break;
 
-        case 9:
-            return T_sampling_Addr;
-            done_tt.notify();
-            break;
+    case 9:
+      return T_sampling_Addr;
+      break;
 
-        case 10:
-            return Set_flag_Addr;
-            done_tt.notify();
-            break;
-        
-        default:
-            return 0;
-            break;
+    case 10:
+      return Set_flag_Addr;
+      break;
+
+    case 11:
+      return Param_approx_1_Addr;
+      break;
+    
+    case 12:
+      return Param_approx_2_Addr;
+      break;
+
+    case 13:
+      return Voltage_out;
+      break;
+
+    case 14:
+      return Current_out;
+      break;
+    
+    default:
+      return 0;
+      break;
 
     }
 }
@@ -510,22 +524,18 @@ int read_addr(int count){
     {
     case 0:
         return Param_approx_1_Addr;
-        done_tt.notify();
         break;
     
     case 1:
         return Param_approx_2_Addr;
-        done_tt.notify();
         break;
 
     case 2:
         return Voltage_out;
-        done_tt.notify();
         break;
 
     case 3:
         return Current_out;
-        done_tt.notify();
         break;
 
     default:
@@ -560,43 +570,52 @@ int read_addr(int count){
 
     cout << "@" << sc_time_stamp() << endl;
 
-    cout << "\nInicializador del estimador \n";
+    cout << "\nInicializador del estimador. \n";
 
-    for (int i = 0; i < 11; i++)
+    for (int i = 0; i < 15; i++)
     {
-        P_Data = write_data(i);
-        P_Addr = write_Addr(i);
-        P_Rd_Wr = true;
-        wait(done_tt);
-        cout << "MIRAME" << endl;
-        cout << hex << P_Data << endl;
-        //Comunicacion
-        comando = 1;
-        data    = Data;
-        addrs  = Addr;
-        addrs  = addrs | 0xCA00000000;
-        do_t.notify(0,SC_NS);
-        wait(done_tC);
+      P_Data = write_data(i);
+      P_Addr = write_Addr(i);
+      P_Rd_Wr = true;
+      
+
+      cout << "MIRAME" << endl;
+      cout << hex << P_Data << endl;
+
+      //Comunicacion
+      comando = 1;
+      data    = P_Data;
+      addrs  = P_Addr;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
     }
-    
+
     cout << "\nLectura de registro del estimador \n";
 
     for (int i = 0; i < 4; i++)
     {   
       P_Rd_Wr = false;
       P_Addr = read_addr(i);
-      wait(done_tt);
       cout << "MIRAME" << endl;
-      cout << hex << P_Data << endl;
+      cout << hex << P_Addr << endl;
       comando = 0;
       data    = 0;
       addrs  = P_Addr;
       addrs  = addrs | 0xCA00000000;
       do_t.notify(0,SC_NS);
       wait(done_tC);
-      start = data; //Debe INT o hacer cambio
-      
-    }    
+      P_Rd_Wr = true;
+      P_Data = data; //Debe INT o hacer cambio
+
+      P_Addr = 0xA000000 + i;
+      comando = 1;
+      data    = P_Data;
+      addrs  = P_Addr;
+      addrs  = addrs | 0xCA00000000;
+      do_t.notify(0,SC_NS);
+      wait(done_tC);
+    }  
 
     cout << endl <<"@" << sc_time_stamp() << "Terminando simulacion.\n" << endl;
 
@@ -660,16 +679,14 @@ int read_addr(int count){
 
 
   //---------------Variables CPU-------------------------------
-  sc_unit<32> P_Data;
-  sc_unit<32> P_Addr;
+  sc_uint<32> P_Data;
+  sc_uint<32> P_Addr;
   bool P_Rd_Wr;
   
   //---------------Variable internas CPU-----------------------
   int Data_m = 0;
   int Addr_m = 0;
   bool Rd_Wr_m = false;
-
-  sc_event done_tt;
 };
 
 
