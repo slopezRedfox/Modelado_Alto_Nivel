@@ -1,9 +1,11 @@
 //-----------------------------------------------------
 #include "systemc.h"
 
-#define WR_DELAY     10
-#define RD_DELAY      5
-#define BURST_DELAY   1
+#define SIZE        512000000
+#define WR_DELAY           10
+#define RD_DELAY            5
+#define BURST_DELAY         1
+
 
 SC_MODULE (ram) {
  
@@ -17,8 +19,8 @@ SC_MODULE (ram) {
   // Constructor for memory
   //SC_CTOR(ram) {
   SC_HAS_PROCESS(ram);
-    ram(sc_module_name ram, int size=512000000) {
-    mem = new int [size];
+    ram(sc_module_name ram) {
+    mem = new int [SIZE];
     SC_THREAD(wr);
     SC_THREAD(rd);
          
@@ -36,13 +38,13 @@ SC_MODULE (ram) {
   }  
 
   void read(int addr, int * dat, int brst=0) {
-    for(int i; i < 8; i++)
-    {
-      data[i] = dat[i];
-    }
     address = addr;
     burst = brst;
     rd_t.notify(RD_DELAY, SC_NS);
+    for(int i; i < 8; i++)
+    {
+      dat[i] = data[i];
+    }
   }  
 
   void rd() 
