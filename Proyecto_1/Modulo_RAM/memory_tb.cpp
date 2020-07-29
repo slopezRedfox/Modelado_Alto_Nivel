@@ -3,8 +3,7 @@
 
 int sc_main (int argc, char* argv[]) {
  
-  int data[8];
-  //int dat[8];
+  int data;
   int address;
   
   ram mem("MEM");
@@ -15,75 +14,125 @@ int sc_main (int argc, char* argv[]) {
   
   // Dump the desired signals
   sc_trace(wf, data, "data");
-  sc_trace(wf, address, "Address");
   
-  sc_start(0,SC_NS);
-  cout << "@" << sc_time_stamp()<< endl;
-
-  // Data to be write into memory
-  data[0] = 0xaced;
-  data[1] = 0xbeef;
-  data[2] = 0xdead;
-  data[3] = 0x1234;
-  data[4] = 0x1234;
-  data[5] = 0xdead;
-  data[6] = 0xbeef;
-  data[7] = 0xaced;
+  sc_start(0, SC_NS);
+  cout << "@" << sc_time_stamp()<< "Simulation started" << endl;
 
   // Start the write proccess
   printf("\nWriting a sigle data\n");
-  printf("WR: addr = 0x10, data = 0xaced\n");
-  sc_start(1,SC_NS);
   address = 0x10;
+  data = 0xaced;
   mem.write(address, data, 0);
+  sc_start(15,SC_NS);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
 
+  cout << "@" << sc_time_stamp()<< endl;
   printf("\nWriting a 4-burst data\n");
-  printf("WR: addr = 0x40, data = 0xaced\n");
-  printf("WR: addr = 0x42, data = 0xbeef\n");
-  printf("WR: addr = 0x43, data = 0xdead\n");
-  printf("WR: addr = 0x44, data = 0x1234\n");
-  sc_start(1,SC_NS);
-  mem.write(0x40, data, 1);
+  address = 0x40;
+  data = 0xaced;
+  mem.write(address, data, 1);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(15,SC_NS);
+  data = 0xbeef;
+  mem.write(address, data, 1);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address+1,data);
+  sc_start(5,SC_NS);
+  data = 0xdead;
+  mem.write(address, data, 1);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address+2,data);
+  sc_start(5,SC_NS);
+  data = 0x1234;
+  mem.write(address, data, 1);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address+3,data);
+  sc_start(5,SC_NS);
 
+  cout << "@" << sc_time_stamp()<< endl;
   printf("\nWriting a 8-burst data\n");
-  printf("WR: addr = 0x80, data = 0xaced\n");
-  printf("WR: addr = 0x81, data = 0xbeef\n");
-  printf("WR: addr = 0x82, data = 0xdead\n");
-  printf("WR: addr = 0x83, data = 0x1234\n");
-  printf("WR: addr = 0x84, data = 0x1234\n");
-  printf("WR: addr = 0x85, data = 0xdead\n");
-  printf("WR: addr = 0x86, data = 0xbeef\n");
-  printf("WR: addr = 0x87, data = 0xaced\n");
-  sc_start(0,SC_NS);
-  mem.write(0x80, data, 2);
+  address = 0x80;
+  data = 0xaced;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(15,SC_NS);
+  data = 0xbeef;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0xdead;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0x1234;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0xaced;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0xbeef;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0xdead;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
+  data = 0x1234;
+  mem.write(address, data, 2);
+  //printf("WR: address = 0x%x, data = 0x%x\n",address,data);
+  sc_start(5,SC_NS);
 
   // Start the read proccess
+  cout << "@" << sc_time_stamp()<< endl;
   printf("\nReading single data from memory address 0x10\n");
-  sc_start(1,SC_NS);
-  mem.read(0x10, data, 0);
-  printf("RD: addr = 0x10, data = %x\n", data[0]);
+  data = mem.read(0x10, 0);
+  //printf("RD: address = 0x10, data = 0x%x\n", data);
+  sc_start(10,SC_NS);
 
+  cout << "@" << sc_time_stamp()<< endl;
   printf("\nReading 4-burst data from memory address 0x40\n");
+  address = 0x40;
+  data = mem.read(address, 1);
+  //printf("RD: address = 0x40, data = 0x%x\n", data);
+  sc_start(10,SC_NS);
+  data = mem.read(address, 1);
+  //printf("RD: address = 0x41, data = 0x%x\n", data);
   sc_start(1,SC_NS);
-  mem.read(0x40, data, 1);
-  printf("RD: addr = 0x40, data = %x\n", data[0]);
-  printf("RD: addr = 0x41, data = %x\n", data[1]);
-  printf("RD: addr = 0x42, data = %x\n", data[2]);
-  printf("RD: addr = 0x43, data = %x\n", data[3]);
-  
-  printf("\nWriting a 8-burst data\n");
+  data = mem.read(address, 1);
+  //printf("RD: address = 0x42, data = 0x%x\n", data);
   sc_start(1,SC_NS);
-  mem.read(0x80, data, 2);
-  printf("WR: addr = 0x80, data = %x\n", data[0]);
-  printf("WR: addr = 0x81, data = %x\n", data[1]);
-  printf("WR: addr = 0x82, data = %x\n", data[2]);
-  printf("WR: addr = 0x83, data = %x\n", data[3]);
-  printf("WR: addr = 0x84, data = %x\n", data[4]);
-  printf("WR: addr = 0x85, data = %x\n", data[5]);
-  printf("WR: addr = 0x86, data = %x\n", data[6]);
-  printf("WR: addr = 0x87, data = %x\n", data[7]);
+  data = mem.read(address, 1);
+  //printf("RD: address = 0x43, data = 0x%x\n", data);
+  sc_start(1,SC_NS);
   
-
+  
+  cout << "@" << sc_time_stamp()<< endl;
+  printf("\nReading 8-burst data from memory address 0x40\n");
+  address = 0x80;
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(10,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(10,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
+  data = mem.read(address, 2);
+  //printf("RD: address = 0x%x, data = 0x%x\n", address, data);
+  sc_start(1,SC_NS);
 
   cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
   sc_close_vcd_trace_file(wf);
