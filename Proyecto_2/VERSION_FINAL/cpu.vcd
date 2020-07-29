@@ -1,0 +1,43 @@
+$date
+     Jul 28, 2020       18:13:09
+$end
+
+$version
+ SystemC 2.3.3-Accellera --- Jul  8 2020 13:01:15
+$end
+
+$timescale
+     1 ns
+$end
+
+$scope module SystemC $end
+$var real    1  aaaaa  param_1       $end
+$var real    1  aaaab  param_2       $end
+$var real    1  aaaac  volt       $end
+$var real    1  aaaad  current       $end
+$upscope $end
+$enddefinitions  $end
+
+$comment
+All initial values are dumped below at time 0 sec = 0 timescale units.
+$end
+
+$dumpvars
+r0 aaaaa
+r0 aaaab
+r0 aaaac
+r0 aaaad
+$end
+
+#1715
+r0.550013542175293 aaaaa
+
+#1936
+r-12.99773216247559 aaaab
+
+#2257
+r0.5500173568725586 aaaaa
+
+#2478
+r-12.99752426147461 aaaab
+
