@@ -54,7 +54,7 @@ int sc_main (int argc, char* argv[]) {
   printf("WR: addr = 0x85, data = 0xdead\n");
   printf("WR: addr = 0x86, data = 0xbeef\n");
   printf("WR: addr = 0x87, data = 0xaced\n");
-  sc_start(1,SC_NS);
+  sc_start(0,SC_NS);
   mem.write(0x80, data, 2);
 
   // Start the read proccess
@@ -83,6 +83,8 @@ int sc_main (int argc, char* argv[]) {
   printf("WR: addr = 0x86, data = %x\n", data[6]);
   printf("WR: addr = 0x87, data = %x\n", data[7]);
   
+
+
   cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
   sc_close_vcd_trace_file(wf);
   return 0;// Terminate simulation
