@@ -14,6 +14,9 @@ int I_int, V_int, P1_int, P2_int;
 
 
 int sc_main (int argc, char* argv[]) {
+
+  sc_signal < int > addr;
+  sc_signal < float > data;
   
   sc_signal< sc_uint<16> > adc_v;
   sc_signal< sc_uint<16> > adc_i;
@@ -27,6 +30,8 @@ int sc_main (int argc, char* argv[]) {
   
   estimador estimador_dut("ESTIMADOR");
 
+    estimador_dut.addr(addr);
+    estimador_dut.data(data);
     estimador_dut.adc_v(adc_v);
     estimador_dut.adc_i(adc_i);
     estimador_dut.start(start);
@@ -63,6 +68,81 @@ int sc_main (int argc, char* argv[]) {
   start = 1;
   adc_v = 0;
   adc_i = 0;
+  estimador_dut.process_sample();
+  sc_start(50,SC_NS);
+  printf("first\n");
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00020; 
+  data = 5;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00024; 
+  data = 22;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00028; 
+  data = 3.99;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c0002c; 
+  data = 0.1;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00030; 
+  data = 0;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00038; 
+  data = 0;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00040; 
+  data = 100;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00048; 
+  data = 0.55;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00050; 
+  data = -13.0;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00058; 
+  data = 1e-6;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  cout << "@" << sc_time_stamp()<< endl;
+  addr = 0x43c00060; 
+  data = 5;
+  estimador_dut.set_up();
+  sc_start(50,SC_NS);
+
+  sc_start(0,SC_NS);
+  cout << "@" << sc_time_stamp()<< endl;
+  start = 1;
+  //adc_v = 0;
+  //adc_i = 0;
   estimador_dut.process_sample();
   sc_start(50,SC_NS);
   printf("first\n");
