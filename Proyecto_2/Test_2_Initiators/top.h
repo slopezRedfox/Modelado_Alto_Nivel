@@ -20,9 +20,9 @@ SC_MODULE(Top)
     {
         controler_1 = new Controler("controler_1");
         controler_2 = new Controler_2("controler_2");
-        router    = new Router   ("router");
+        router      = new Router   ("router");
 
-        ram       = new Ram      ("ram");   
+        ram         = new Ram      ("ram");   
 
         controler_1->socket_initiator.bind(  router->socket_target_C); //CPU
         router     ->socket_initiator_C.bind(controler_1->socket_target);  

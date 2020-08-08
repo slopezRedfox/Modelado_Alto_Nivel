@@ -16,8 +16,8 @@ using namespace std;
 
 //Constantes de memoria cache
 #define SIZE 0x4FFFFFFF
-#define wr_delay_ram 15
-#define rd_delay_ram 10
+#define wr_delay_ram 10
+#define rd_delay_ram 5
 
 //----------------------------------------------------------------------------------------------------------------------
 //Modulo de Ram
@@ -167,14 +167,19 @@ struct Ram: sc_module {
                                                 sc_time& delay){
         
 
+        tlm::tlm_command cmd = trans.get_command();
         sc_dt::uint64    adr = trans.get_address();
-        unsigned int     len = trans.get_data_length();
-        unsigned char*   byt = trans.get_byte_enable_ptr();
-        unsigned int     wid = trans.get_streaming_width();
+        unsigned char*   ptr = trans.get_data_ptr();   
+        unsigned int     len = trans.get_data_length();   
+        unsigned char*   byt = trans.get_byte_enable_ptr();   
+        unsigned int     wid = trans.get_streaming_width();   
 
         //Se le coloca un ID a cada transaccion
         ID_extension* id_extension = new ID_extension;
-        trans.get_extension( id_extension ); //Se extrae el ID de la transaccion
+        ID_extension* id_extension2 = new ID_extension;
+
+        trans.get_extension(id_extension); //Se extrae el ID de la transaccion
+        *id_extension2 = *id_extension;
         
         //
         // PRIMERA FASE DE LA TRANSACCION
@@ -194,10 +199,20 @@ struct Ram: sc_module {
                 return tlm::TLM_COMPLETED;
             }
 
+            tlm::tlm_generic_payload* trans_aux = new tlm::tlm_generic_payload;
+            int * data_ptr = new int;
+            *data_ptr = *ptr;
+            trans_aux->set_command( cmd );   
+            trans_aux->set_address( adr );   
+            trans_aux->set_data_ptr( reinterpret_cast<unsigned char*>(data_ptr) );
+            trans_aux->set_data_length( len );   
+            trans_aux->set_byte_enable_ptr( byt );
+            trans_aux->set_extension( id_extension2 );
+
             // Se pasa los datos a las variables globales de la estructura
             // Que estan declaradas al final de la misma, para poder ser
             // trabajados en la funcion thread
-            trans_pending_queue.push(&trans);
+            trans_pending_queue.push(trans_aux);
             phase_pending_queue.push(phase);
             delay_pending_queue.push(delay);
 

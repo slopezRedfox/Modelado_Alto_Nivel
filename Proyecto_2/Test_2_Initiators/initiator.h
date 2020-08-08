@@ -11,6 +11,7 @@ using namespace std;
 #include "tlm.h"
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
+#include <queue>
 
 // Initiator module generating generic payload transactions
 // User-defined extension class
@@ -62,45 +63,42 @@ struct Controler: sc_module {
   void thread_process_to_bw(){
     
     tlm::tlm_generic_payload trans;
-    sc_time delay = sc_time(10, SC_NS);
+    sc_time delay = sc_time(8, SC_NS);
 
-    ID_extension* id_extension = new ID_extension; //Se crea un ID con la clase anterior
+    ID_extension* id_extension = new ID_extension;
     trans.set_extension( id_extension );
 
-    while(Exe == true){
-      //Espera a que la funcion TB indique el comando y el dato a transmitir o leer
+    while(true){
+
       wait(do_t.default_event());
 
       //PHASE == BEGIN_REQ
       tlm::tlm_phase phase = tlm::BEGIN_REQ;
-      tlm::tlm_command cmd = static_cast<tlm::tlm_command>(comando); //comando = (0 read, 1 write)
+      tlm::tlm_command cmd = static_cast<tlm::tlm_command>(comando);
       
       //Parametros de trans
       trans.set_command( cmd );   
       trans.set_address( addrs );   
-      trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data) ); //Este es un puntero
+      trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data) );
       trans.set_data_length( 4 );   
       trans.set_byte_enable_ptr( 0 );
 
       tlm::tlm_sync_enum status;
-
-      wait( sc_time(10, SC_NS) );
       cout  << "0 - "<< name() << " BEGIN_REQ  SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
-      status = socket_initiator->nb_transport_fw(trans, phase, delay );  // Non-blocking transport call   
       wait(delay);
-      wait(auxC);
-      // Checkea el status de la transaccion   
+      status = socket_initiator->nb_transport_fw(trans, phase, delay );
+      wait(delay);
+
       switch (status)
       {
         case tlm::TLM_ACCEPTED:   
           
-          wait( sc_time(10, SC_NS) );
           cout  << "0 - "<< name() << " END_REQ    SENT    " << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-          phase = tlm::END_REQ; 
 
-          status = socket_initiator->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
-          break;   
+          phase = tlm::END_REQ;
+          status = socket_initiator->nb_transport_fw( trans, phase, delay );
+          break;
       
         case tlm::TLM_UPDATED:
 
@@ -115,20 +113,15 @@ struct Controler: sc_module {
           cout  << "0 - " << " TRANS ID " << id_extension->transaction_id << "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << 0 << " } , data = "   
                 << hex << data << " at time " << sc_time_stamp() << ", delay = " << delay << endl;
           cout << endl;
-          
           break;   
       }
 
-      //Delay between RD/WR request
-      //
-
-      wait(100, SC_NS);   
-      
+      //wait(aux2);
+      //done_t.notify();
       id_extension->transaction_id++;
-      done_tCc.notify();
     }
   }
-   
+  
   //----------------------------------------------------------------------------------------------
    
   virtual tlm::tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& trans,
@@ -142,8 +135,8 @@ struct Controler: sc_module {
     ID_extension* id_extension = new ID_extension;
     trans.get_extension( id_extension ); 
     
-    if (phase == tlm::BEGIN_RESP) {
-                              
+    if (phase == tlm::BEGIN_RESP) 
+    {                          
       // Initiator obliged to check response status   
       if (trans.is_response_error() )   
         SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
@@ -158,18 +151,23 @@ struct Controler: sc_module {
             << endl;
       cout << endl;
 
-      //Delay para BEGIN_RESP
       cout  << "0 - "<< name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      auxC.notify();
+
       return tlm::TLM_ACCEPTED;
     } 
 
-    else if (phase == tlm::END_RESP) {  
-           
-      //Delay for END_RESP
+    else if (phase == tlm::END_RESP)
+    {       
       cout  << "0 - "<< name() << " END_RESP   RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      cout << "Listo" << endl;
       
+      cout << endl;
+      cout << endl;
+      cout << "------------------------------------------------------------------------" << endl;
+      cout << endl;
+      cout << endl;
+      count = count +1;
+      aux2.notify();
+
       return tlm::TLM_COMPLETED;
     }
 
@@ -238,15 +236,15 @@ struct Controler: sc_module {
         tlm::tlm_sync_enum status;
         phase  = tlm::BEGIN_RESP; 
         
-        wait( sc_time(10, SC_NS) );
         cout  << "1 - "   << name() << "    BEGIN_RESP SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
-        
+
+        wait( sc_time(10, SC_NS) );
         status = socket_target->nb_transport_bw( *trans_pending, phase, delay_pending );   
+        wait( sc_time(10, SC_NS) );          
 
         switch (status)     
           case tlm::TLM_ACCEPTED:   
           
-          wait( sc_time(10, SC_NS) );          
           cout  << "1 - "   << name() << "    END_RESP   SENT    " << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
           phase = tlm::END_RESP;
           
@@ -287,33 +285,23 @@ struct Controler: sc_module {
           phase_pending = phase;
           delay_pending = delay;
 
-          wait(delay);
           cout  << "1 - "   << name() << "    BEGIN_REQ  RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;            
 
-          // Se hace un notify de e1 para permitir a la funcion thread ejecutar
           target_t.notify();
-
-          //Se envia que la transaccion ha sido aceptada
           return tlm::TLM_ACCEPTED;
       }
 
       //----------------------------------------------------------------------------------------------
       // SEGUNDA FASE DE LA TRANSACCION
       
-      else if(phase == tlm::END_REQ){
-
-          wait(delay);
+      else if(phase == tlm::END_REQ)
+      {
           cout  << "1 - "   << name() << "    END_REQ    RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-          
-          //Se imprime que se termino el request
-          //Devuelve la confirmacion de que se TERMONO la transaccion
           return tlm::TLM_COMPLETED;
       }
 
-      else{
-          //Se imprime que se termino el request
-          //Devuelve la confirmacion de que se TERMONO la transaccion
-          //Esta sección no se usa es solo para evitar warnings
+      else
+      {
           return tlm::TLM_COMPLETED;
       }
   }
@@ -327,50 +315,52 @@ struct Controler: sc_module {
   void TB(){
     cout << endl;
     cout << endl;
-    //wait(15,SC_NS);
-    comando = 1;
-    data    = 0x0000000A;
-         //                              offset
-         //  |      tag        |  index    | |
-    addrs  =0b00000000000000000000000000000000;
-    addrs  = addrs | 0xCA00000000;
-    do_t.notify(0,SC_NS);
-    wait(done_tCc);
 
-    cout << endl;
-    cout << endl;
-    cout << "------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << endl;
+    while(count < 3){
+      //-------------------------------0
+      comando = 1;
+      data    = 0x0000000A;
+                //                              offset
+                //  |      tag        |  index    | |
+      addrs  = 0b00000000000000000000000000000000;
+      addrs  = addrs | 0xCA00000000;
+      
+      do_t.notify(0,SC_NS);
+      wait(aux2);
 
+      //-------------------------------0
+      comando = 1;
+      data    = 0x0000000B;
+                //                              offset
+                //  |      tag        |  index    | |
+      addrs  = 0b00000000000000000000000000000001;
+      addrs  = addrs | 0xCA00000000;
+      
+      do_t.notify(0,SC_NS);
+      wait(aux2);
 
-/*
-    comando = 1;
-    data    = 0x0000000B;
-         //                              offset
-         //  |      tag        |  index    | |
-    addrs  =0b00000000000000000000000000000001;
-    addrs  = addrs | 0xCA00000000;
-    do_t.notify(0,SC_NS);
-    wait(done_tCc);
-
-    cout << endl;
-    cout << endl;
-    cout << "------------------------------------------------------------------------" << endl;
-    cout << endl;
-    cout << endl;
-*/ 
-    Exe = false;
+      //-------------------------------0
+      comando = 1;
+      data    = 0x0000000C;
+                //                              offset
+                //  |      tag        |  index    | |
+      addrs  = 0b00000000000000000000000000000010;
+      addrs  = addrs | 0xCA00000000;
+      
+      do_t.notify(0,SC_NS);
+      wait(aux2);
+    }
   }
   
   
   // Internal data buffer used by initiator with generic payload
   sc_event_queue do_t;
-  sc_event  done_tCc, auxC;
-  int data;  
-  long int addrs;
-  bool comando;
-  
+  sc_event done_t,aux2;
+
+  int      data   ;  
+  long int addrs  ;
+  bool     comando;
+
   bool Exe = true;
 
   //Variables de puerto Target
@@ -378,6 +368,8 @@ struct Controler: sc_module {
   tlm::tlm_generic_payload* trans_pending;   
   tlm::tlm_phase phase_pending;   
   sc_time delay_pending;
+
+  int count=0;
 };
 
 
