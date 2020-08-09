@@ -21,7 +21,7 @@ using namespace std;
 
 #define calc_delay 0
 //Constans from memory
-
+/*
 #define I_scale_factor    5
 #define V_scale_factor    22
 #define Ig                3.99
@@ -32,7 +32,7 @@ using namespace std;
 #define INIT_ALPHA        0.55
 #define INIT_BETA         -13.0
 #define T_SAMPLING        1e-6
-
+*/
 #define INT2U32(x) *(uint32_t*)&x
 #define INT2U16(x) *(uint16_t*)&x
 
@@ -235,6 +235,8 @@ struct Estimador: sc_module {
         // SE MODIFICA SEGUN LO QUE SE NECESITE CUANDO SE VA A HACER LECTURAS/ESCRITURAS
         //********************************************************************************
         address = static_cast<sc_uint<32> >( adr & 0xFFFFFFFF);
+        int var_test = *ptr;
+        cout << "test" << var_test << endl<< endl;
         /*
         if(address == I_scale_factor_Addr){
           //Pasar de puntero a Dato, pasarlo a flotante
@@ -280,8 +282,8 @@ struct Estimador: sc_module {
 		  	else if(address == T_sampling_Addr){
 		  		T_SAMPLING = data;
 		  		cout << "T_SAMPLING" << T_SAMPLING << endl;
-		  	}*/
-
+		  	}
+*/
         //********************************************************************************
         //********************************************************************************
         
@@ -424,18 +426,18 @@ struct Estimador: sc_module {
 
       if(start){
         cout << "Hola mundo" << endl;
-        init_cond_1 = INIT_ALPHA;
-        init_cond_2 = INIT_BETA;
+        init_cond_1 = INIT_ALPHA_e;
+        init_cond_2 = INIT_BETA_e;
       };
 
       I = adc_i / pow(2,16);
       V = adc_v / pow(2,16);
 
-      I *= I_scale_factor;
-      V *= V_scale_factor;
-      y_log = log(Ig - I);
-      p1=((GAMMA11*V+GAMMA12)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_1;
-      p2=((GAMMA21*V+GAMMA22)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_2;
+      I *= I_scale_factor_e;
+      V *= V_scale_factor_e;
+      y_log = log(Ig_e - I);
+      p1=((GAMMA11_e*V+GAMMA12_e)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING_e+init_cond_1;
+      p2=((GAMMA21_e*V+GAMMA22_e)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING_e+init_cond_2;
       init_cond_1=p1;
       init_cond_2=p2;
 
@@ -579,7 +581,7 @@ struct Estimador: sc_module {
  
   //Variables del IP
   //-----------IP Ports----------------------------------
-  //float I_scale_factor, V_scale_factor, Ig, GAMMA11, GAMMA12, GAMMA21, GAMMA22, INIT_ALPHA, INIT_BETA, T_SAMPLING;
+  float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
   sc_uint<16> adc_v; // vector data from XADC
   sc_uint<16> adc_i; // vector data from XADC
