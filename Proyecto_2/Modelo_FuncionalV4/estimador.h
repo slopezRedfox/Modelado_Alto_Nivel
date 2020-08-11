@@ -586,11 +586,9 @@ struct Estimador: sc_module {
     sc_trace(wf, volt, "volt");
     sc_trace(wf, current, "current");
 
-    //wait(1000, SC_NS);
-
     wait(done_IP);
     
-    for(int i = 0; i < 200000; i++){  
+    for(int i = 0; i < n_samples; i++){  
 
       start = 0;
       V_TB = InputVoltage(t)/22;

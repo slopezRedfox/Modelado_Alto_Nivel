@@ -66,7 +66,7 @@ struct Controler_2: sc_module {
       trans.set_command( cmd );   
       trans.set_address( addrs );   
       trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data) );
-      trans.set_data_length( 4 );   
+      trans.set_data_length( 8 );   
       trans.set_byte_enable_ptr( 0 );
 
       tlm::tlm_sync_enum status;
@@ -186,7 +186,7 @@ struct Controler_2: sc_module {
         unsigned int     wid = trans_pending->get_streaming_width();   
 
         //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-        if (byt != 0 || wid != 0 || len > 4)   
+        if (byt != 0 || wid != 0 || len > 8)   
           SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
         
         //
@@ -258,7 +258,7 @@ struct Controler_2: sc_module {
       if(phase == tlm::BEGIN_REQ){
           
           //Se revisa que todos los datos de la transaccione esten bien
-          if (byt != 0 || wid != 0 || len > 4){  
+          if (byt != 0 || wid != 0 || len > 8){  
               SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
           }
 
@@ -324,7 +324,6 @@ struct Controler_2: sc_module {
       do_t.notify(0,SC_NS);
       wait(aux);
     }
-
   }
   
   

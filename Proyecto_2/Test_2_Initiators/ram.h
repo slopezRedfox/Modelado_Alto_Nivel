@@ -78,7 +78,7 @@ struct Ram: sc_module {
             unsigned int     wid = trans_pending->get_streaming_width();   
 
             //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-            if ((adr & 0xFFFFFFFF) >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 4)   
+            if ((adr & 0xFFFFFFFF) >= sc_dt::uint64(SIZE) || byt != 0 || wid != 0 || len > 8)   
                 SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
             
             //
@@ -194,14 +194,18 @@ struct Ram: sc_module {
             }
             
             // Luego se pregunta si el tamaño del paquete es el adecuado
-            if (len > 4 || wid != 0) {
+            if (len > 8 || wid != 0) {
                 trans.set_response_status( tlm::TLM_BURST_ERROR_RESPONSE );
                 return tlm::TLM_COMPLETED;
             }
 
             tlm::tlm_generic_payload* trans_aux = new tlm::tlm_generic_payload;
             int * data_ptr = new int;
-            *data_ptr = *ptr;
+            
+            memcpy(data_ptr, ptr, 4);
+            cout << "Estimador : " << *data_ptr << endl;
+
+
             trans_aux->set_command( cmd );   
             trans_aux->set_address( adr );   
             trans_aux->set_data_ptr( reinterpret_cast<unsigned char*>(data_ptr) );

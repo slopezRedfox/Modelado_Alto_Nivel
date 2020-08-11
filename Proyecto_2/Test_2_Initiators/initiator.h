@@ -63,7 +63,7 @@ struct Controler: sc_module {
   void thread_process_to_bw(){
     
     tlm::tlm_generic_payload trans;
-    sc_time delay = sc_time(8, SC_NS);
+    sc_time delay = sc_time(10, SC_NS);
 
     ID_extension* id_extension = new ID_extension;
     trans.set_extension( id_extension );
@@ -80,7 +80,7 @@ struct Controler: sc_module {
       trans.set_command( cmd );   
       trans.set_address( addrs );   
       trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data) );
-      trans.set_data_length( 4 );   
+      trans.set_data_length( 8 );   
       trans.set_byte_enable_ptr( 0 );
 
       tlm::tlm_sync_enum status;
@@ -116,8 +116,7 @@ struct Controler: sc_module {
           break;   
       }
 
-      //wait(aux2);
-      //done_t.notify();
+      done_t.notify();
       id_extension->transaction_id++;
     }
   }
@@ -202,7 +201,7 @@ struct Controler: sc_module {
         unsigned int     wid = trans_pending->get_streaming_width();   
 
         //Al igual que en el punto anterior se revisa que todos los datos de la transaccione esten bien
-        if (byt != 0 || wid != 0 || len > 4)   
+        if (byt != 0 || wid != 0 || len > 8)   
           SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
         
         //
@@ -274,7 +273,7 @@ struct Controler: sc_module {
       if(phase == tlm::BEGIN_REQ){
           
           //Se revisa que todos los datos de la transaccione esten bien
-          if (byt != 0 || wid != 0 || len > 4){  
+          if (byt != 0 || wid != 0 || len > 8){  
               SC_REPORT_ERROR("TLM2", "Target does not support given generic payload transaction");   
           }
 
@@ -316,39 +315,32 @@ struct Controler: sc_module {
     cout << endl;
     cout << endl;
 
-    while(count < 3){
+    while(count < 2){
       //-------------------------------0
       comando = 1;
-      data    = 0x0000000A;
+      data    = 0x00000AAA;
                 //                              offset
                 //  |      tag        |  index    | |
       addrs  = 0b00000000000000000000000000000000;
       addrs  = addrs | 0xCA00000000;
       
       do_t.notify(0,SC_NS);
-      wait(aux2);
+      wait(done_t);
+      wait(80, SC_NS);
 
       //-------------------------------0
       comando = 1;
-      data    = 0x0000000B;
+      data    = 0x00F00FFB;
                 //                              offset
                 //  |      tag        |  index    | |
       addrs  = 0b00000000000000000000000000000001;
       addrs  = addrs | 0xCA00000000;
       
       do_t.notify(0,SC_NS);
-      wait(aux2);
+      wait(done_t);
+      wait(70, SC_NS);
 
-      //-------------------------------0
-      comando = 1;
-      data    = 0x0000000C;
-                //                              offset
-                //  |      tag        |  index    | |
-      addrs  = 0b00000000000000000000000000000010;
-      addrs  = addrs | 0xCA00000000;
-      
-      do_t.notify(0,SC_NS);
-      wait(aux2);
+      cout << "hola" << endl;
     }
   }
   
