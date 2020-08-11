@@ -4,6 +4,7 @@
 #include <systemc-ams>
 
 #define Nbits 16
+#define DATARATE 1000000000
 
 SCA_TDF_MODULE( ADC ) {
     //Entradas
@@ -12,7 +13,10 @@ SCA_TDF_MODULE( ADC ) {
     sca_tdf::sca_de::sca_out<int> bits; //Salida del ADC en Hex
     sca_tdf::sca_de::sca_out<double> data; //Salida del ADC en Hex
 
-    void set_attributes() {};
+    void set_attributes() {
+        In.set_rate(DATARATE);
+        bits.set_timestep(1, sc_core::SC_NS);
+    };
 
     void initialize() {};
 
