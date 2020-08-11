@@ -3,39 +3,53 @@
 
 #include <systemc-ams>
 
+#define Nbits 16
 
 SCA_TDF_MODULE( ADC ) {
     //Entradas
-    sca_tdf::sca_in<double> In; //Entrada del ADC
-    sca_tdf::sca_in<double> Rf; //Referencia se refiere al Voltaje maximo que permite el ADC
-
-    //Salidas, de momento solo 2 bits
-    sca_tdf::sca_de::sca_out<bool> bit0;
-    sca_tdf::sca_de::sca_out<bool> bit1;
+    sca_tdf::sca_in<double> In;         //Entrada del ADC
+    //sca_tdf::sca_in<double> Rf;         //Referencia se refiere al Voltaje maximo que permite el ADC
+    sca_tdf::sca_de::sca_out<int> bits; //Salida del ADC en Hex
 
     void set_attributes() {};
 
     void initialize() {};
 
     void processing() {
-        double Inp_Aux = abs(In.read());
-        double Ref_Aux = Rf.read()/pow(2,2);
-        bool   Out_Aux[2];
+        bool   Out_Aux[Nbits];
+        double Inp_Aux  = In.read();
+        int    bits_Aux = 0;
+
+        double Rf      = 40; //Arbitrariamente se coloca la referencia en 40V
+        double Ref_Aux = Rf/pow(2,Nbits);
         
-        //Ejemplo, Vmax a 3.3 con 2 bits
+        //Ejemplo, Vmax a 40V con 4 bits
         /*
-        2.475 - 3.300 = 11
-        1.650 - 2.475 = 10
-        0.825 - 1.650 = 01
-        0.000 - 0.825 = 00
+        37.5 - 40.0 = 1111
+        35.0 - 37.5 = 1110
+        32.5 - 35.0 = 1101
+        30.0 - 32.5 = 1100
+        27.5 - 30.0 = 1011
+        25.0 - 27.5 = 1010
+        22.5 - 25.0 = 1001
+        20.0 - 22.5 = 1000
+        17.5 - 20.0 = 0111
+        15.0 - 17.5 = 0110
+        12.5 - 15.0 = 0101
+        10.0 - 12.5 = 0100
+         7.5 - 10.0 = 0011
+         5.0 -  7.5 = 0010
+         2.5 -  5.0 = 0001
+         0.0 -  2.5 = 0000
+
         */
         //std::cout << "Vref: " << Ref_Aux << std::endl;
 
         //--------------------------------------------------
         //Se hace un for desde N-1 bits desde el MSB al LSB 
-        for (int i = 1; i >= 0; i--)
+        for (int i = Nbits-1; i >= 0; i--)
         {
-            if(Inp_Aux > (Ref_Aux*pow(2,i)))
+            if(Inp_Aux >= (Ref_Aux*pow(2,i)))
             {
                 Out_Aux[i] = 1;
             }
@@ -45,13 +59,18 @@ SCA_TDF_MODULE( ADC ) {
             }
             Inp_Aux = Inp_Aux - (Ref_Aux*pow(2,i))*Out_Aux[i];
         }
-        bit0.write(Out_Aux[0]);
-        bit1.write(Out_Aux[1]);
+
+        for (int j = 0; j < Nbits; j++)
+        {
+            bits_Aux = bits_Aux + Out_Aux[j]*pow(2,j);
+        }
+
+        bits.write(bits_Aux);
     }
 
     void ac_processing() {};
 
-    SCA_CTOR( ADC ) : In("In"), Rf("Rf"){}
+    SCA_CTOR( ADC ) : In("In"){}
 };
 
 #endif
