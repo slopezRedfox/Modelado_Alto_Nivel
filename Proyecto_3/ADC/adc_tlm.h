@@ -137,20 +137,22 @@ struct Adc_tlm: sc_module
       wait(50, SC_NS);
       if(mem[0] == 1)
       {
+        mem[1] = IO.read();
+        /*//
         cout << endl;
         cout << "Escritura en memoria Data I/O   :" << hex << IO.read() << endl;
-        mem[1] = IO.read();
         cout << "Escritura en memoria Data MEM[0]:" << hex << mem[0] << endl;
         cout << "Escritura en memoria Data MEM[1]:" << hex << mem[1] << endl;
-        cout << endl;
+        cout << endl;//*/
       }
       else
       {
+        /*//
         cout << endl;
         cout << "Escritura en memoria Data I/O   :" << hex << IO.read() << endl;
         cout << "Escritura en memoria Data MEM[0]:" << hex << mem[0] << endl;
         cout << "Escritura en memoria Data MEM[1]:" << hex << mem[1] << endl;
-        cout << endl;
+        cout << endl;//*/
       }
     }
   }

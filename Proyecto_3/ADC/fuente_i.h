@@ -6,9 +6,13 @@
 SCA_TDF_MODULE (i_sig) {
     sca_tdf::sca_out<double> out; // output port
 
-    i_sig( sc_core::sc_module_name nm ) : out("out") {}
+    i_sig(  sc_core::sc_module_name nm,
+            sca_core::sca_time Tm_ = sca_core::sca_time(0.125, sc_core::SC_MS))
+        
+        : out("out"), Tm(Tm_) {}
     
     void set_attributes() {
+        set_timestep(Tm);
     }
     
     void processing() {
@@ -23,6 +27,8 @@ SCA_TDF_MODULE (i_sig) {
 
         out.write(Lambda - exp( alpha * V + b));
     }
+private:
+    sca_core::sca_time Tm; // module time step
 };
 
 #endif

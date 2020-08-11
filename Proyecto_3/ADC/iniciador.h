@@ -29,14 +29,12 @@ struct ID_extension: tlm::tlm_extension<ID_extension> {
    
 struct Initiator: sc_module   
 {   
-  // TLM2 socket, defaults to 32-bits wide, generic payload, generic DMI mode
-  tlm_utils::simple_initiator_socket<Initiator> socket; 
+  tlm_utils::simple_initiator_socket<Initiator> socket_adc; 
 
   SC_HAS_PROCESS(Initiator);
-  Initiator(sc_module_name initiator)   // Construct and name socket   
+  Initiator(sc_module_name initiator)
   {   
-    // Register callbacks for incoming interface method calls
-    socket.register_nb_transport_bw(this, &Initiator::nb_transport_bw_adc);
+    socket_adc.register_nb_transport_bw(this, &Initiator::nb_transport_bw_adc);
     SC_THREAD(Muestreo_adc);
     SC_THREAD(thread_process_adc);   
   }   
@@ -69,7 +67,7 @@ struct Initiator: sc_module
     
       cout << endl << endl;
       cout << name() << " BEGIN_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      status = socket->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call   
+      status = socket_adc->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call   
   
       // Check value returned from nb_transport   
   
@@ -81,7 +79,7 @@ struct Initiator: sc_module
         cout << name() << " END_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
 
         phase = tlm::END_REQ; 
-        status = socket->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
+        status = socket_adc->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
         break;   
   
       case tlm::TLM_UPDATED:   

@@ -10,6 +10,7 @@ SCA_TDF_MODULE( ADC ) {
     sca_tdf::sca_in<double> In;         //Entrada del ADC
     //sca_tdf::sca_in<double> Rf;         //Referencia se refiere al Voltaje maximo que permite el ADC
     sca_tdf::sca_de::sca_out<int> bits; //Salida del ADC en Hex
+    sca_tdf::sca_de::sca_out<double> data; //Salida del ADC en Hex
 
     void set_attributes() {};
 
@@ -66,6 +67,7 @@ SCA_TDF_MODULE( ADC ) {
         }
 
         bits.write(bits_Aux);
+        data.write(bits_Aux*40/pow(2,Nbits));
     }
 
     void ac_processing() {};
