@@ -47,7 +47,6 @@ struct Adc_tlm: sc_module
     
     if(phase == tlm::END_REQ)
     {  
-      wait(delay);
       cout << name() << " END_REQ RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
       return tlm::TLM_COMPLETED;
     }
@@ -64,7 +63,6 @@ struct Adc_tlm: sc_module
       phase_pending=phase;
       delay_pending=delay;
       
-      wait(delay);
       cout << name() << " BEGIN_REQ RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
       e1.notify();
 
@@ -110,7 +108,6 @@ struct Adc_tlm: sc_module
       // Obliged to set response status to indicate successful completion   
       trans_pending->set_response_status( tlm::TLM_OK_RESPONSE );  
       
-      wait(1, SC_NS);
       delay_pending= sc_time(1, SC_NS);
       
       cout << name() << " BEGIN_RESP SENT" << " TRANS ID " << id_extension->transaction_id <<  " at time " << sc_time_stamp() << endl;
@@ -128,7 +125,7 @@ struct Adc_tlm: sc_module
   
           phase = tlm::END_RESP; 
           socket->nb_transport_bw( *trans_pending, phase, delay_pending );
-    }   
+    }
   } 
   
   void Muestreo()

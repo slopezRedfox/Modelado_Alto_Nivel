@@ -532,7 +532,7 @@ struct Controler: sc_module {
     cout << "Estimador Lectura de registro del estimador\n";
     while(true)
     {
-      for (int i = 0; i < 2; i++)
+      for (int i = 0; i < 4; i++)
       {
         //Lectura
         comando = 0;
@@ -574,7 +574,7 @@ struct Controler: sc_module {
           random_addrs++;
         }
       }
-      wait(100, SC_NS); //delay entre cada lectura de memoria
+      wait(50, SC_NS); //delay entre cada lectura de memoria
     }
   }
   

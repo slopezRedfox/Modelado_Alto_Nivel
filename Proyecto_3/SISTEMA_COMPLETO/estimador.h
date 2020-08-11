@@ -35,18 +35,6 @@ using namespace std;
 #define T_sampling_Addr     0x43c00058
 #define Start_Addr          0x43c00060
 
-/*
-#define I_scale_factor_e    5
-#define V_scale_factor_e    22
-#define Ig_e                3.99
-#define GAMMA11_e           0.1
-#define GAMMA12_e           0
-#define GAMMA21_e           0
-#define GAMMA22_e           100
-#define INIT_ALPHA_e        0.55
-#define INIT_BETA_e         -13.0
-#define T_SAMPLING_e        1e-6
-*/
 #define INT2U32(x) *(uint32_t*)&x
 #define INT2U16(x) *(uint16_t*)&x
 
@@ -64,6 +52,8 @@ struct Estimador: sc_module {
 
   // Constructor de Cotroler
   SC_CTOR(Estimador) : 
+    socket_adc_v("socket_adc_v"),
+    socket_adc_i("socket_adc_i"),
     socket_initiator("socket_initiator"),
     socket_target("socket_to_target")
   {
@@ -71,11 +61,12 @@ struct Estimador: sc_module {
     socket_initiator.register_nb_transport_bw(this, &Estimador::nb_transport_bw);
     socket_target.register_nb_transport_fw(this, &Estimador::nb_transport_fw);
 
-    //ADC Functions
+    //ADC Functions V
     socket_adc_v.register_nb_transport_bw(this, &Estimador::nb_transport_bw_adc_v);
     SC_THREAD(Muestreo_adc_v);
     SC_THREAD(thread_process_adc_v);
 
+    //ADC Functions I
     socket_adc_i.register_nb_transport_bw(this, &Estimador::nb_transport_bw_adc_i);
     SC_THREAD(Muestreo_adc_i);
     SC_THREAD(thread_process_adc_i);
@@ -92,6 +83,8 @@ struct Estimador: sc_module {
   //                                   FUNCIONES DE ADC V
   //==============================================================================================
  
+  //----------------------------------------------------------------------------------------------
+  // Thread Iniciador ADC V
   void thread_process_adc_v()   
   {
     tlm::tlm_generic_payload trans;
@@ -106,20 +99,15 @@ struct Estimador: sc_module {
 
     while (true) 
     {  
-      wait(do_adc_t);
+      wait(do_adc_v_t);
       
-      tlm::tlm_phase phase = tlm::BEGIN_REQ;   
-          
+      tlm::tlm_phase phase = tlm::BEGIN_REQ;    
       tlm::tlm_command cmd = static_cast<tlm::tlm_command>(cmd_adc_v);   
       trans.set_command( cmd );
       trans.set_address( addrs_adc_v );   
       trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data_adc_v) );   
       trans.set_data_length( 4 );   
-  
-      // Other fields default: byte enable = 0, streaming width = 0, DMI_hint = false, no extensions   
-    
-      //Delay for BEGIN_REQ
-      wait(1, SC_NS);
+      
       tlm::tlm_sync_enum status;   
     
       cout << endl << endl;
@@ -127,7 +115,6 @@ struct Estimador: sc_module {
       status = socket_adc_v->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call   
   
       // Check value returned from nb_transport   
-  
       switch (status)   
       {   
       case tlm::TLM_ACCEPTED:   
@@ -150,75 +137,13 @@ struct Estimador: sc_module {
               << hex << data_adc_v << " at time " << sc_time_stamp() << ", delay = " << delay << endl;   
         break;   
       }
-      wait(done_adc_t);
+      wait(done_adc_v_t);
       id_extension->transaction_id++; 
     }   
-  }
-
-  void thread_process_adc_i()   
-  {
-    tlm::tlm_generic_payload trans;
-    sc_time delay = sc_time(1, SC_NS);   
-
-    ID_extension* id_extension = new ID_extension;
-    trans.set_extension( id_extension ); // Add the extension to the transaction
-
-    for (int i = 0; i<0xA000000; i++){  // Analizar si 0xA000000 se debe cambiar?
-      id_extension->transaction_id++;
-    }
-
-    while (true) 
-    {  
-      wait(do_adc_t);
-      
-      tlm::tlm_phase phase = tlm::BEGIN_REQ;   
-          
-      tlm::tlm_command cmd = static_cast<tlm::tlm_command>(cmd_adc_v);   
-      trans.set_command( cmd );
-      trans.set_address( addrs_adc_v );   
-      trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data_adc_v) );   
-      trans.set_data_length( 4 );   
-  
-      // Other fields default: byte enable = 0, streaming width = 0, DMI_hint = false, no extensions   
-    
-      //Delay for BEGIN_REQ
-      wait(1, SC_NS);
-      tlm::tlm_sync_enum status;   
-    
-      cout << endl << endl;
-      cout << name() << " BEGIN_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      status = socket_adc_v->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call   
-  
-      // Check value returned from nb_transport   
-  
-      switch (status)   
-      {   
-      case tlm::TLM_ACCEPTED:   
-      
-        wait(2, SC_NS);
-        cout << name() << " END_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-
-        phase = tlm::END_REQ; 
-        status = socket_adc_v->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
-        break;   
-  
-      case tlm::TLM_UPDATED:   
-      case tlm::TLM_COMPLETED:   
-  
-        // Initiator obliged to check response status   
-        if (trans.is_response_error() )   
-          SC_REPORT_ERROR("TLM2", "Response error from nb_transport_fw");   
-  
-        cout << "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << data_adc_v << " } , data = "   
-              << hex << data_adc_v << " at time " << sc_time_stamp() << ", delay = " << delay << endl;   
-        break;   
-      }
-      wait(done_adc_t);
-      id_extension->transaction_id++; 
-    }   
-  }     
+  }   
    
-  // TLM      
+  //----------------------------------------------------------------------------------------------
+  
   virtual tlm::tlm_sync_enum nb_transport_bw_adc_v( tlm::tlm_generic_payload& trans,   
                                                   tlm::tlm_phase& phase, sc_time& delay )   
   {   
@@ -230,9 +155,9 @@ struct Estimador: sc_module {
     
     if (phase == tlm::END_RESP)
     {       
-      wait(delay);      
+      wait(1, SC_NS);
       cout << name() << " END_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      done_adc_t.notify();
+      done_adc_v_t.notify();
       return tlm::TLM_COMPLETED;
     }
     
@@ -245,7 +170,7 @@ struct Estimador: sc_module {
            << " } , data = " << hex << data_adc_v << " at time " << sc_time_stamp()   
            << ", delay = " << delay << " TRANS ID " << id_extension->transaction_id << endl;
       
-      wait(delay);
+      wait(1, SC_NS);
       cout << name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
       return tlm::TLM_ACCEPTED;   
     }
@@ -253,45 +178,9 @@ struct Estimador: sc_module {
     else{
       return tlm::TLM_ACCEPTED;   
     }
-  }
-
-  virtual tlm::tlm_sync_enum nb_transport_bw_adc_i( tlm::tlm_generic_payload& trans,   
-                                                  tlm::tlm_phase& phase, sc_time& delay )   
-  {   
-    tlm::tlm_command cmd = trans.get_command();   
-    sc_dt::uint64    adr = trans.get_address();   
-    
-    ID_extension* id_extension = new ID_extension;
-    trans.get_extension( id_extension ); 
-    
-    if (phase == tlm::END_RESP)
-    {       
-      wait(delay);      
-      cout << name() << " END_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      done_adc_t.notify();
-      return tlm::TLM_COMPLETED;
-    }
-    
-    if (phase == tlm::BEGIN_RESP)
-    {                          
-      if (trans.is_response_error() )   
-        SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
-            
-      cout << "trans/bw = { " << (cmd ? 'W' : 'R') << ", " << hex << adr   
-           << " } , data = " << hex << data_adc_v << " at time " << sc_time_stamp()   
-           << ", delay = " << delay << " TRANS ID " << id_extension->transaction_id << endl;
-      
-      wait(delay);
-      cout << name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
-      return tlm::TLM_ACCEPTED;   
-    }
-
-    else{
-      return tlm::TLM_ACCEPTED;   
-    }
-  }     
+  }   
   
-  //====================================================================
+  //Funcion de muestreo del adc V
   void Muestreo_adc_v()
   {
     while(true)
@@ -309,19 +198,118 @@ struct Estimador: sc_module {
         addrs_adc_v = 0x1;
         cmd_adc_v   = 0;
       }
-      do_adc_t.notify();
-      wait(done_adc_t);
+      do_adc_v_t.notify();
+      wait(done_adc_v_t);
       data_adc_v_float  = data_adc_v*40/pow(2,16);
-      aux_adc = data_adc_v;
+      aux_v_adc = data_adc_v;
       flag_adc_v = 0;
-
-      data_adc_i_float  = data_adc_i*40/pow(2,16);
-      aux_adc_i = data_adc_i;
-      flag_adc_i = 0;
     }
   }
 
-    void Muestreo_adc_i()
+
+  //==============================================================================================
+  //                                   FUNCIONES DE ADC I
+  //==============================================================================================
+ 
+  ///----------------------------------------------------------------------------------------------
+  // Thread Iniciador ADC I
+  void thread_process_adc_i()   
+  {
+    tlm::tlm_generic_payload trans;
+    sc_time delay = sc_time(1, SC_NS);   
+
+    ID_extension* id_extension = new ID_extension;
+    trans.set_extension( id_extension ); // Add the extension to the transaction
+
+    for (int i = 0; i<0xB000000; i++){
+      id_extension->transaction_id++;
+    }
+
+    while (true) 
+    {  
+      wait(do_adc_i_t);
+      
+      tlm::tlm_phase phase = tlm::BEGIN_REQ;    
+      tlm::tlm_command cmd = static_cast<tlm::tlm_command>(cmd_adc_i);   
+      trans.set_command( cmd );
+      trans.set_address( addrs_adc_i );   
+      trans.set_data_ptr( reinterpret_cast<unsigned char*>(&data_adc_i) );   
+      trans.set_data_length( 4 );   
+      
+      tlm::tlm_sync_enum status;   
+    
+      cout << endl << endl;
+      cout << name() << " BEGIN_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      status = socket_adc_i->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call   
+  
+      // Check value returned from nb_transport   
+      switch (status)   
+      {   
+      case tlm::TLM_ACCEPTED:   
+      
+        wait(2, SC_NS);
+        cout << name() << " END_REQ SENT" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+
+        phase = tlm::END_REQ; 
+        status = socket_adc_i->nb_transport_fw( trans, phase, delay );  // Non-blocking transport call
+        break;   
+  
+      case tlm::TLM_UPDATED:   
+      case tlm::TLM_COMPLETED:   
+  
+        // Initiator obliged to check response status   
+        if (trans.is_response_error() )   
+          SC_REPORT_ERROR("TLM2", "Response error from nb_transport_fw");   
+  
+        cout << "trans/fw = { " << (cmd ? 'W' : 'R') << ", " << hex << data_adc_i << " } , data = "   
+              << hex << data_adc_i << " at time " << sc_time_stamp() << ", delay = " << delay << endl;   
+        break;   
+      }
+      wait(done_adc_i_t);
+      id_extension->transaction_id++; 
+    }   
+  }   
+   
+  //----------------------------------------------------------------------------------------------
+  
+  virtual tlm::tlm_sync_enum nb_transport_bw_adc_i( tlm::tlm_generic_payload& trans,   
+                                                  tlm::tlm_phase& phase, sc_time& delay )   
+  {   
+    tlm::tlm_command cmd = trans.get_command();   
+    sc_dt::uint64    adr = trans.get_address();   
+    
+    ID_extension* id_extension = new ID_extension;
+    trans.get_extension( id_extension ); 
+    
+    if (phase == tlm::END_RESP)
+    {       
+      wait(1, SC_NS);
+      cout << name() << " END_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      done_adc_i_t.notify();
+      return tlm::TLM_COMPLETED;
+    }
+    
+    if (phase == tlm::BEGIN_RESP)
+    {                          
+      if (trans.is_response_error() )   
+        SC_REPORT_ERROR("TLM2", "Response error from nb_transport");   
+            
+      cout << "trans/bw = { " << (cmd ? 'W' : 'R') << ", " << hex << adr   
+           << " } , data = " << hex << data_adc_i << " at time " << sc_time_stamp()   
+           << ", delay = " << delay << " TRANS ID " << id_extension->transaction_id << endl;
+      
+      wait(1, SC_NS);
+      cout << name () << " BEGIN_RESP RECEIVED" << " TRANS ID " << id_extension->transaction_id << " at time " << sc_time_stamp() << endl;
+      return tlm::TLM_ACCEPTED;   
+    }
+
+    else{
+      return tlm::TLM_ACCEPTED;   
+    }
+  }   
+  
+  //Funcion de muestreo del adc I
+  void Muestreo_adc_i()
   {
     while(true)
     {
@@ -338,15 +326,14 @@ struct Estimador: sc_module {
         addrs_adc_i = 0x1;
         cmd_adc_i   = 0;
       }
-      do_adc_t.notify();
-      wait(done_adc_t);
-
+      do_adc_i_t.notify();
+      wait(done_adc_i_t);
       data_adc_i_float  = data_adc_i*40/pow(2,16);
-      aux_adc_i = data_adc_i;
+      aux_v_adc = data_adc_i;
       flag_adc_i = 0;
     }
   }
-
+  //*/
   
   //==============================================================================================
   //                                   FUNCIONES DE INICIADOR
@@ -419,7 +406,7 @@ struct Estimador: sc_module {
   }
    
   //----------------------------------------------------------------------------------------------
-   
+
   virtual tlm::tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& trans,
                                               tlm::tlm_phase& phase,
                                               sc_time& delay ){
@@ -697,6 +684,7 @@ struct Estimador: sc_module {
   //                                   FUNCIONES TB
   //==============================================================================================
 
+  //Funciones para procesamiento de datos
   float InputVoltage(float t){
     return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
   }
@@ -717,7 +705,7 @@ struct Estimador: sc_module {
     return INT2U32(b);
   }
 
-  //Datos listos
+  //Funciones de procesamiento
   void process_sample() {
     calc_t.notify(calc_delay, SC_NS);
   }
@@ -833,6 +821,7 @@ struct Estimador: sc_module {
     }
   }
 
+  //Main function
   void TB(){
 
     cout << endl;
@@ -849,14 +838,14 @@ struct Estimador: sc_module {
     file_Params.open ("PARAMS.CSV");
     
     // Dump the desired signals
-    sc_trace(wf, adc_v, "adc_v");
-    sc_trace(wf, adc_i, "adc_i");
-    sc_trace(wf, start, "start");
-    sc_trace(wf, p1, "param_1");
-    sc_trace(wf, p2, "param_2");
-    sc_trace(wf, volt, "volt");
-    sc_trace(wf, current, "current");
-    sc_trace(wf, aux_adc, "aux_adc");
+    sc_trace(wf, adc_v    , "adc_v"    );
+    sc_trace(wf, adc_i    , "adc_i"    );
+    sc_trace(wf, start    , "start"    );
+    sc_trace(wf, p1       , "param_1"  );
+    sc_trace(wf, p2       , "param_2"  );
+    sc_trace(wf, volt     , "volt"     );
+    sc_trace(wf, current  , "current"  );
+    sc_trace(wf, aux_v_adc, "aux_v_adc");
 
     wait(done_IP);
     
@@ -885,13 +874,10 @@ struct Estimador: sc_module {
     sc_close_vcd_trace_file(wf);
     file_Signals.close();
     file_Params.close(); 
-
-    Exe = false;
   }
-  
-  //Variables TB
-  bool Exe = true;
-  
+
+
+
   //Variables de puerto Target
   sc_event_queue  do_target_t; 
   std::queue<tlm::tlm_generic_payload*> trans_pending_queue;   
@@ -907,12 +893,16 @@ struct Estimador: sc_module {
   unsigned char *data_Target;
   sc_uint<32> address_Target;
 
+
+
   //Variables de puerto Iniciador  
   sc_event_queue do_initiator_t;
   sc_event initiator_done_t, initiator_done_Resp_t;
   int data_Initiator;
   long int address_Initiator;
   bool comando_Initiator;
+
+
 
   //Variables internas
   float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
@@ -949,23 +939,28 @@ struct Estimador: sc_module {
   float n_samples=segundos*sample_rate;
   float V_TB, I_TB;
 
-  //ADC V
-  sc_event do_adc_t, done_adc_t;
-  
+
+
+  //Variables ADC V
+  sc_event do_adc_v_t, done_adc_v_t;
+
   bool cmd_adc_v;
   bool flag_adc_v = 1;
   int  data_adc_v;
-  sc_uint<32> aux_adc;
+  sc_uint<32> aux_v_adc;
   float  data_adc_v_float;
   long int addrs_adc_v;
+
+
+
+  //Variables ADC I
+  sc_event do_adc_i_t, done_adc_i_t;
 
   bool cmd_adc_i;
   bool flag_adc_i = 1;
   int  data_adc_i;
-  sc_uint<32> aux_adc_i;
+  sc_uint<32> aux_i_adc;
   float  data_adc_i_float;
   long int addrs_adc_i;
 };
-
-
 #endif

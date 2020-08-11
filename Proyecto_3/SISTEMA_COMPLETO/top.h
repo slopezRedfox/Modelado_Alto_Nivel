@@ -31,7 +31,6 @@ SC_MODULE(Top)
     Adc_tlm   *adc_v_tlm;   
     sc_core::sc_in<int> IO_v;
 
-    Initiator *initiator_i;
     Adc_tlm   *adc_i_tlm;   
     sc_core::sc_in<int> IO_i;
 
@@ -78,13 +77,12 @@ SC_MODULE(Top)
         adc_v_tlm->IO(IO_v);
 
         // Coneccion de IP con ADC I
-        initiator_i = new Initiator("initiator_i"); //IP
         adc_i_tlm   = new Adc_tlm("adc_i_tlm");   
         adc_i_tlm->IO(IO_i);
 
         // Bind initiator_v socket to target socket   
         IP->socket_adc_v.bind(adc_v_tlm->socket);   
-        initiator_i->socket_adc.bind(adc_i_tlm->socket);
+        IP->socket_adc_i.bind(adc_i_tlm->socket);
     }
 };
 

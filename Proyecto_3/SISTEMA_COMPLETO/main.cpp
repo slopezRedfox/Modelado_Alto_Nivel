@@ -65,7 +65,7 @@ int sc_main(int argc, char* argv[])
   sca_trace(vcdfile, data_i, "data_i");
   sca_trace(vcdfile, In_i, "In_i");
 
-  sc_start(500000, sc_core::SC_NS);
+  sc_start(20, sc_core::SC_MS);
 
   sca_util::sca_close_vcd_trace_file(vcdfile);
   return 0;
