@@ -40,9 +40,9 @@ void Router<N_TARGETS>::b_transport( tlm::tlm_generic_payload& trans, sc_time& d
   {
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
-
-    std::cout << std::endl;
-    std::cout << "1: " << std::hex << address << std::endl;
+    printf("1\n");
+    //std::cout << std::endl;
+    //std::cout << "1: " << std::hex << address << std::endl;
 
     if (address < 0x1ff00000) target_nr=0;
     else {
@@ -59,9 +59,9 @@ unsigned int Router<N_TARGETS>::transport_dbg(tlm::tlm_generic_payload& trans)
 {
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
-
-    std::cout << std::endl;
-    std::cout << "2: " << std::hex << address << std::endl;
+    printf("2\n");
+    //std::cout << std::endl;
+    //std::cout << "2: " << std::hex << address << std::endl;
 
     if (address < 0x1ff00000) target_nr=0;
     else {
@@ -81,8 +81,9 @@ tlm::tlm_sync_enum Router<N_TARGETS>::nb_transport_fw(tlm::tlm_generic_payload& 
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
 
-    std::cout << std::endl;
-    std::cout << "3: " << std::hex << address << std::endl;
+    printf("3");
+    //std::cout << std::endl;
+    //std::cout << "3: " << std::hex << address << std::endl;
 
     if (address < 0x1ff00000) target_nr=0;
     else {
