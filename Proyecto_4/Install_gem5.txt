@@ -46,3 +46,26 @@
 telnet localhost 3456 
 #### Esto lleva un tiempo hasta que se abre un shell basico (cerca de 15 min)
 
+
+#========================================
+# Luego
+
+cp x86_systemc_files/sc_* gem5/util/tlm/examples/slave_port/
+cd gem5/
+scons build/X86/gem5.opt
+scons --with-cxx-config --without-python --without-tcmalloc build/X86/libgem5_opt.so
+export M5_PATH=~/Desktop/x86_systemc_files
+cd ..
+cd x86_systemc_files/
+gcc write_reserved_memory.c -o write_reserved_memory.o
+cd disks/
+sudo mount -o loop,offset=32256 linux-x86.img /mnt/
+cd ..
+cp write_reserved_memory.o ~/Desktop/gem5/
+sudo cp write_reserved_memory.o /mnt/
+sudo umount /mnt/
+cd ../gem5/util/tlm
+../../build/X86/gem5.opt ../../configs/example/fs.py --tlm-memory=transactor --cpu-type=AtomicSimpleCPU --num-cpu=1 --mem-type=SimpleMemory --mem-size=512MB --disk-image=$M5_PATH/disks/linux-x86.img
+./build/examples/slave_port/gem5.sc m5out/config.ini -o 0
+
+telnet localhost 3456 
