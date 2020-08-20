@@ -50,6 +50,7 @@ telnet localhost 3456
 #========================================
 # Luego
 
+cp Modelado_Alto_Nivel/Proyecto_4/sc_* x86_systemc_files/
 cp x86_systemc_files/sc_* gem5/util/tlm/examples/slave_port/
 cd gem5/
 scons build/X86/gem5.opt

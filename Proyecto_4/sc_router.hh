@@ -18,7 +18,7 @@ struct Router: sc_module
 {
     /** TLM interface socket: */
     tlm_utils::simple_target_socket<Router> socket;
-     
+    
     // *********************************************
     // Use tagged sockets to be able to distinguish incoming backward path calls
     // *********************************************

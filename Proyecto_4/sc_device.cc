@@ -201,26 +201,20 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
     //}
 
     unsigned char *mem_array_ptr = mem + adr;
-    char word;
-    printf("Device\n");
 
     /* Load / Store the access: */
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         if (debug) {
             SC_REPORT_INFO("target", "tlm::TLM_READ_COMMAND");
         }
-
+        //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(ptr, mem_array_ptr, len);
-        printf("TLM_READ_COMMAND\n");
-    }
-
-    else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
+    } else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
         if (debug) {
             SC_REPORT_INFO("target", "tlm::TLM_WRITE_COMMAND");
         }
-
+        //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(mem_array_ptr, ptr, len);
-        printf("TLM_WRITE_COMMAND\n");
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
