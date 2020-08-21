@@ -213,12 +213,62 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
         }
         //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(ptr, mem_array_ptr, len);
-    } else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
+    } 
+    
+    else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
         cout << "WRITE COMAND" << endl;
-        if (debug) {
-            SC_REPORT_INFO("target", "tlm::TLM_WRITE_COMMAND");
+        int data_aux_Target;
+
+        std::memcpy(&data_aux_Target, ptr, len);
+
+        cout << "Estimador ********IP ******* addrs   : "   << hex << *mem_array_ptr  << endl;
+        cout << "Estimador ********IP ******* data    : "   << data_aux_Target  << endl;
+        cout << "Estimador ********IP ******* data hex: "   << hex << data_aux_Target << endl;
+/*
+        if(address_Target == Start_Addr){
+            start = 1;
+            calc_t.notify(calc_delay, SC_NS);
         }
-        //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
+        
+        else if(address_Target == I_scale_factor_Addr){
+            I_scale_factor_e = var_test_float;
+        }
+
+        else if(address_Target == V_scale_factor_Addr){
+            V_scale_factor_e = var_test_float;
+        }
+
+        else if(address_Target == Ig_value_Addr){
+            Ig_e = var_test_float;
+        }
+
+        else if(address_Target == Gamma11_Addr){
+            GAMMA11_e = var_test_float;
+        }
+        
+        else if(address_Target == Gamma12_Addr){
+            GAMMA12_e = var_test_float;
+        }
+
+        else if(address_Target == Gamma21_Addr){
+            GAMMA21_e = var_test_float;
+        }
+
+        else if(address_Target == Gamma22_Addr){
+            GAMMA22_e = var_test_float;
+        }
+
+        else if(address_Target == Init_alpha_Addr){
+            INIT_ALPHA_e = var_test_float;
+        }
+
+        else if(address_Target == Init_beta_Addr){
+            INIT_BETA_e = var_test_float;
+        }
+
+        else if(address_Target == T_sampling_Addr){
+            T_SAMPLING_e = var_test_float;
+        }*/
         std::memcpy(mem_array_ptr, ptr, len);
     }
 

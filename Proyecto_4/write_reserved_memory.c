@@ -10,22 +10,16 @@
 
     int main() {
             int fd;
-            char *reserved_memory;
-            char *reserved_memory2;
-            char *buffer = "Hello World!";
-            char *buffer2;
+            int *reserved_memory;
+            int *buffer = 1;
 
             fd = open("/dev/mem", O_RDWR | O_SYNC);
             /* Returns a pointer to the 4GB point in /dev/mem - the start of my reserved memory. Only mapping 4096 bytes. */
-            reserved_memory = (char *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
-            reserved_memory2 = (char *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
+            reserved_memory = (int *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
 
-
-            printf("Hola\n");
-            printf("fffe\n");
+            printf("Print\n");
             printf("data: %s\n", buffer);
             printf("Addr: %x\n", *buffer);
-            printf("Addr2: %x", *reserved_memory);
 
             if (reserved_memory == MAP_FAILED) {
                     printf("Failed to creating mapping.\n");
@@ -33,8 +27,9 @@
                     return -1;
             }
             sprintf(reserved_memory, "%s", buffer);
-            sprintf(buffer2, "%s", reserved_memory2);
-            //cout << "data: \n" << *buffer << endl;
-            //cout << "Addr: \n" << buffer << endl;
+            printf("Print reseved\n");
+            printf("data  reseved: %x \n", reserved_memory);
+            printf("Addr  reseved: %x \n", *reserved_memory);
+
             return 0;
     }
