@@ -81,7 +81,7 @@ sc_main(int argc, char **argv)
                   parser.getVerboseFlag(),
                   memorySize,
                   parser.getMemoryOffset());
-    
+
     Router<2> router("router",
                   parser.getVerboseFlag());
 
@@ -89,7 +89,7 @@ sc_main(int argc, char **argv)
     router.initiator_socket[0]->bind(memory.socket);
     router.initiator_socket[1]->bind(device.socket);
     transactor.sim_control.bind(sim_control);
-   
+
     SC_REPORT_INFO("sc_main", "Start of Simulation");
 
     sc_core::sc_start();

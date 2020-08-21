@@ -59,6 +59,7 @@ Device::transport_dbg(tlm::tlm_generic_payload& trans)
     unsigned char *mem_array_ptr = mem + adr;
 
     /* Load / Store the access: */
+    cout << "Comando de: "<< cmd << endl;
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         if (debug) {
             SC_REPORT_INFO("target", "DBG tlm::TLM_READ_COMMAND");
@@ -203,13 +204,17 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
     unsigned char *mem_array_ptr = mem + adr;
 
     /* Load / Store the access: */
+    cout << "Comando Execute_transaction: " << cmd << endl;
+    cout << "FLAG DEBIG: " << debug << endl;
     if ( cmd == tlm::TLM_READ_COMMAND ) {
+        cout << "READ COMAND" << endl;
         if (debug) {
             SC_REPORT_INFO("target", "tlm::TLM_READ_COMMAND");
         }
         //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(ptr, mem_array_ptr, len);
     } else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
+        cout << "WRITE COMAND" << endl;
         if (debug) {
             SC_REPORT_INFO("target", "tlm::TLM_WRITE_COMMAND");
         }
