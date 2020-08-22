@@ -195,81 +195,42 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
         return;
     }
 
-    //if ( len > 4 || wid < len ) {
-    //    cout << "Burst Error len=" << len << " wid=" << wid << endl;
-    //    trans.set_response_status( tlm::TLM_BURST_ERROR_RESPONSE );
-    //    return;
-    //}
-
     unsigned char *mem_array_ptr = mem + adr;
+    //unsigned char *test          = mem + 0x1ff00008;
+    int Aux;
 
     /* Load / Store the access: */
-    cout << "Comando Execute_transaction: " << cmd << endl;
-    cout << "FLAG DEBIG: " << debug << endl;
+    //cout << "Comando Execute_transaction: " << cmd << endl;
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
+
         if (debug) {
             SC_REPORT_INFO("target", "tlm::TLM_READ_COMMAND");
         }
         //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(ptr, mem_array_ptr, len);
-    } 
-    
+    }
+
     else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
+
         cout << "WRITE COMAND" << endl;
-        int data_aux_Target;
-
-        std::memcpy(&data_aux_Target, ptr, len);
-
-        cout << "Estimador ********IP ******* addrs   : "   << hex << *mem_array_ptr  << endl;
-        cout << "Estimador ********IP ******* data    : "   << data_aux_Target  << endl;
-        cout << "Estimador ********IP ******* data hex: "   << hex << data_aux_Target << endl;
-/*
-        if(address_Target == Start_Addr){
-            start = 1;
-            calc_t.notify(calc_delay, SC_NS);
-        }
-        
-        else if(address_Target == I_scale_factor_Addr){
-            I_scale_factor_e = var_test_float;
-        }
-
-        else if(address_Target == V_scale_factor_Addr){
-            V_scale_factor_e = var_test_float;
-        }
-
-        else if(address_Target == Ig_value_Addr){
-            Ig_e = var_test_float;
-        }
-
-        else if(address_Target == Gamma11_Addr){
-            GAMMA11_e = var_test_float;
-        }
-        
-        else if(address_Target == Gamma12_Addr){
-            GAMMA12_e = var_test_float;
-        }
-
-        else if(address_Target == Gamma21_Addr){
-            GAMMA21_e = var_test_float;
-        }
-
-        else if(address_Target == Gamma22_Addr){
-            GAMMA22_e = var_test_float;
-        }
-
-        else if(address_Target == Init_alpha_Addr){
-            INIT_ALPHA_e = var_test_float;
-        }
-
-        else if(address_Target == Init_beta_Addr){
-            INIT_BETA_e = var_test_float;
-        }
-
-        else if(address_Target == T_sampling_Addr){
-            T_SAMPLING_e = var_test_float;
-        }*/
+        std::memcpy(&aux, ptr, 4);
         std::memcpy(mem_array_ptr, ptr, len);
+
+        cout << "data: " << aux << endl;
+        cout << "addr: " << adr << endl;
+/*
+        if (Aux == 0){
+            for (int i = 1; i<4; i++){
+                std::memcpy(test, &i, 4);
+                std::memcpy(&Aux, test, 4);
+                cout << "Estimador * addrs   : "   << hex << *test << endl;
+                cout << "Estimador * data or : "   << i   << endl;
+                cout << "Estimador * data    : "   << Aux << endl;
+                cout << "Estimador * data hex: "   << hex << Aux   << endl;
+                test = test + 0x4;
+            }
+        }*/
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );

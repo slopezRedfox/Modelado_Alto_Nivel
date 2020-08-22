@@ -44,7 +44,6 @@ void Router<N_TARGETS>::b_transport( tlm::tlm_generic_payload& trans, sc_time& d
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
-        printf("Enter else \n");
         cout << "Addrss: " << hex << address << endl;
         printf("Accessing Device Memory Region03\n");
         }
