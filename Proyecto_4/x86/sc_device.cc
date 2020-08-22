@@ -3,6 +3,114 @@
 using namespace sc_core;
 using namespace std;
 
+#define calc_delay 0
+//Constans from memory
+
+//Direcciones de registro de solo escritura del estimador
+#define I_scale_factor_Addr 0x43c00020
+#define V_scale_factor_Addr 0x43c00024
+#define Ig_value_Addr       0x43c00028
+#define Gamma11_Addr        0x43c0002c
+#define Gamma12_Addr        0x43c00030
+#define Gamma21_Addr        0x43c00038
+#define Gamma22_Addr        0x43c00040
+#define Init_alpha_Addr     0x43c00048
+#define Init_beta_Addr      0x43c00050
+#define T_sampling_Addr     0x43c00058
+#define Start_Addr          0x43c00060
+
+#define INT2U32(x) *(uint32_t*)&x
+#define INT2U16(x) *(uint16_t*)&x
+
+# define M_PI           3.14159265358979323846  /* pi */
+
+#define DELAY_IP 5
+
+//*************************************************************************
+//*************************************************************************
+//*************************************************************************
+
+//Variables de puerto Target
+sc_event_queue  do_target_t; 
+std::queue<tlm::tlm_generic_payload*> trans_pending_queue;   
+std::queue<tlm::tlm_phase>            phase_pending_queue;   
+std::queue<sc_time>                   delay_pending_queue;
+
+tlm::tlm_generic_payload* trans_pending;   
+tlm::tlm_phase phase_pending;   
+sc_time delay_pending;
+
+sc_event target_done_t;
+int data_aux_Target;
+unsigned char *data_Target;
+sc_uint<32> address_Target;
+
+//Variables de puerto Iniciador  
+sc_event_queue do_initiator_t;
+sc_event initiator_done_t, initiator_done_Resp_t;
+int data_Initiator;
+long int address_Initiator;
+bool comando_Initiator;
+
+//Variables internas
+float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
+
+sc_uint<16> adc_v; // vector data from XADC
+sc_uint<16> adc_i; // vector data from XADC
+
+bool  start;         // Active high, ready signal from estimador
+sc_uint<32> param_1; // 32 bit vector output of the estimador
+sc_uint<32> param_2; // 32 bit vector output of the estimador
+sc_uint<32> volt;
+sc_uint<32> current;
+
+sc_event calc_t, done_IP;
+
+float init_cond_1, init_cond_2; 
+float p1, p2, p1_aux, p2_aux, y_log, I, V;
+
+float Lambda = 3.99;                     	//Short-Circuit current
+float Psi = 5.1387085e-6;                	//Is current (saturation)
+float alpha = 0.625;                 			//Thermal voltage relation
+float V_oc = 1/alpha*(log(Lambda/Psi));   //Open circuit voltage
+float V_mpp = 17.4;                  			//Maximum power point voltage
+float I_mpp = 3.75;                  			//Maximum power point current
+float P_mpp = 65.25;                 			//Maximum power 
+float y = log(Lambda);              			//Short-Circuit logarithm
+float b = log(Psi);                 			//Is current logarithm
+float V_cte = 16.69;
+
+float t = 0;
+float segundos=3;
+float sample_rate=1e6;
+float step=1/sample_rate;
+float n_samples=segundos*sample_rate;
+float V_TB, I_TB;
+
+//Variables ADC V
+sc_event do_adc_v_t, done_adc_v_t;
+
+bool cmd_adc_v;
+bool flag_adc_v = 1;
+int  data_adc_v;
+sc_uint<32> aux_v_adc;
+float  data_adc_v_float;
+long int addrs_adc_v;
+
+//Variables ADC I
+sc_event do_adc_i_t, done_adc_i_t;
+
+bool cmd_adc_i;
+bool flag_adc_i = 1;
+int  data_adc_i;
+sc_uint<32> aux_i_adc;
+float  data_adc_i_float;
+long int addrs_adc_i;
+
+//*************************************************************************
+//*************************************************************************
+//*************************************************************************
+
 Device::Device(sc_core::sc_module_name name,
     bool debug,
     unsigned long long int size,
@@ -25,6 +133,8 @@ Device::Device(sc_core::sc_module_name name,
 
     /* allocate storage memory */
     mem = new unsigned char[size];
+
+    SC_THREAD(TB);
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -214,23 +324,17 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
     else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
 
         cout << "WRITE COMAND" << endl;
-        std::memcpy(&aux, ptr, 4);
+        cout << "addr: " << adr << endl;
+
         std::memcpy(mem_array_ptr, ptr, len);
+        std::memcpy(&aux, ptr, 4);
 
         cout << "data: " << aux << endl;
-        cout << "addr: " << adr << endl;
-/*
-        if (Aux == 0){
-            for (int i = 1; i<4; i++){
-                std::memcpy(test, &i, 4);
-                std::memcpy(&Aux, test, 4);
-                cout << "Estimador * addrs   : "   << hex << *test << endl;
-                cout << "Estimador * data or : "   << i   << endl;
-                cout << "Estimador * data    : "   << Aux << endl;
-                cout << "Estimador * data hex: "   << hex << Aux   << endl;
-                test = test + 0x4;
-            }
-        }*/
+        
+        unsigned char * see_me = mem + 0x1ff00008
+        if (see_me == 1){
+            start = 1;
+        }
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -257,4 +361,10 @@ Device::send_response(tlm::tlm_generic_payload& trans)
         response_in_progress = false;
     }
     trans.release();
+}
+
+void TB(){
+    if (start){
+        cout << "Start" << endl;
+    }
 }
