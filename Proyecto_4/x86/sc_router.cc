@@ -13,7 +13,7 @@ Router<N_TARGETS>::Router(sc_core::sc_module_name name,
     socket.register_b_transport(this, &Router::b_transport);
     socket.register_transport_dbg(this, &Router::transport_dbg);
     socket.register_nb_transport_fw(this, &Router::nb_transport_fw);
-    
+
     for (int i = 0; i < N_TARGETS; i++)
     {
       char txt[20];
@@ -40,10 +40,11 @@ void Router<N_TARGETS>::b_transport( tlm::tlm_generic_payload& trans, sc_time& d
   {
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
-    
+
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
+        cout << "Addrss: " << hex << address << endl;
         printf("Accessing Device Memory Region\n");
         }
     // Forward transaction to appropriate target
@@ -60,11 +61,10 @@ unsigned int Router<N_TARGETS>::transport_dbg(tlm::tlm_generic_payload& trans)
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
-        printf("Accessing Device Memory Region\n");
-    }    
+        printf("Accessing Device Memory Region02\n");
+    }
     // Forward transaction to appropriate target
-    ( *initiator_socket[target_nr] )->transport_dbg( trans );  
-
+    ( *initiator_socket[target_nr] )->transport_dbg( trans );
 }
 /* TLM-2 non-blocking transport method */
 template<unsigned int N_TARGETS>
@@ -74,13 +74,13 @@ tlm::tlm_sync_enum Router<N_TARGETS>::nb_transport_fw(tlm::tlm_generic_payload& 
 {
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
-
+    printf("\n");
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
-        printf("Accessing Device Memory Region\n");
+        printf("Accessing Device Memory Region03\n");
     }
     // Forward transaction to appropriate target
-    ( *initiator_socket[target_nr] )->nb_transport_fw( trans, phase, delay );  
+    ( *initiator_socket[target_nr] )->nb_transport_fw( trans, phase, delay );
 }
 
