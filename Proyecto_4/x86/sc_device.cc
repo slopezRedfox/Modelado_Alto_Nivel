@@ -414,7 +414,7 @@ void  Device::estimador_main(){
 }
 
 void  Device::tb(){
-    while{
+    while(true){
         if (start){
             process_sample();
             cout << "Start" << endl;
