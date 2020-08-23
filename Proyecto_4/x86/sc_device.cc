@@ -140,7 +140,6 @@ Device::Device(sc_core::sc_module_name name,
 
     SC_METHOD(tb);
     sensitive << tb_do_event;
-    dont_initialize();
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -331,7 +330,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         if (Aux == 0xA){
             start = 1;
-            tb_do_event.notify(delay);
+            tb_do_event.notify();
         }
     }
 
@@ -363,6 +362,29 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
 //================================================================
 //=====================     MAIN PART OF IP  =====================
 //================================================================
+float InputVoltage(float t){
+    return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
+}
+
+float InputCurrent(float t){
+    return (Lambda - exp( alpha * InputVoltage(t) + b));
+}
+
+uint16_t to_fixed_16(float a){
+    a=a*pow(2,16);
+    int b = (int)a;
+    return INT2U16(b);
+}
+
+uint32_t to_fixed_32(float a){
+    a=a*pow(2,21);
+    int b = (int)a;
+    return INT2U32(b);
+}
+
+void process_sample() {
+    calc_t.notify(calc_delay, SC_NS);
+}
 
 void  Device::tb(){
     if (start){
