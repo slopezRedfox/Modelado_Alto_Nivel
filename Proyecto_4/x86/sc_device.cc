@@ -1,5 +1,21 @@
 #include "sc_device.hh"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <stdint.h>
+#include <iostream>
+#include <fstream>
+
+#include "systemc"
+using namespace sc_core;
+using namespace sc_dt;
+using namespace std;
+
+#include "tlm.h"
+#include "tlm_utils/simple_initiator_socket.h"
+#include "tlm_utils/simple_target_socket.h"
+
 using namespace sc_core;
 using namespace std;
 
@@ -31,13 +47,14 @@ using namespace std;
 //*************************************************************************
 
 //Variables de puerto Target
-sc_event_queue  do_target_t; 
-std::queue<tlm::tlm_generic_payload*> trans_pending_queue;   
-std::queue<tlm::tlm_phase>            phase_pending_queue;   
+/*sc_event_queue  do_target_t;
+std::queue<tlm::tlm_generic_payload*> trans_pending_queue;
+std::queue<tlm::tlm_phase>            phase_pending_queue;
 std::queue<sc_time>                   delay_pending_queue;
+*/
 
-tlm::tlm_generic_payload* trans_pending;   
-tlm::tlm_phase phase_pending;   
+tlm::tlm_generic_payload* trans_pending;
+tlm::tlm_phase phase_pending;
 sc_time delay_pending;
 
 sc_event target_done_t;
@@ -45,7 +62,7 @@ int data_aux_Target;
 unsigned char *data_Target;
 sc_uint<32> address_Target;
 
-//Variables de puerto Iniciador  
+//Variables de puerto Iniciador
 sc_event_queue do_initiator_t;
 sc_event initiator_done_t, initiator_done_Resp_t;
 int data_Initiator;
@@ -109,7 +126,7 @@ long int addrs_adc_i;
 
 //*************************************************************************
 //*************************************************************************
-//*************************************************************************
+//**************************************************************************/
 
 Device::Device(sc_core::sc_module_name name,
     bool debug,
@@ -134,7 +151,8 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    SC_THREAD(TB);
+    //SC_METHOD(TB);
+    //sensitive << target_done_event;
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -306,8 +324,8 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
     }
 
     unsigned char *mem_array_ptr = mem + adr;
-    //unsigned char *test          = mem + 0x1ff00008;
-    int Aux;
+    unsigned char *Aux_addr      = mem + 0x1ff00000;
+    char *Aux;
 
     /* Load / Store the access: */
     //cout << "Comando Execute_transaction: " << cmd << endl;
@@ -327,14 +345,16 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
         cout << "addr: " << adr << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
-        std::memcpy(&aux, ptr, 4);
+        std::memcpy(Aux, Aux_addr, 8);
 
-        cout << "data: " << aux << endl;
-        
-        unsigned char * see_me = mem + 0x1ff00008
-        if (see_me == 1){
+        cout << "data: " << Aux << endl;
+        cout << "data *: " << *Aux << endl;
+
+        /*unsigned char * see_me = mem + 0x1ff00008;
+        std::memcpy(&Aux, see_me, len);
+        if (Aux == 1){
             start = 1;
-        }
+        }*/
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
