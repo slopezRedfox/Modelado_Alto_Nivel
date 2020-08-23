@@ -316,11 +316,9 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         cout << "data: " << Aux << endl;
 
-        /*unsigned char * see_me = mem + 0x1ff00008;
-        std::memcpy(&Aux, see_me, len);
-        if (Aux == 1){
+        if (Aux == 0xA){
             start = 1;
-        }*/
+        }
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
