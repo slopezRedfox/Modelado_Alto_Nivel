@@ -47,14 +47,13 @@ using namespace std;
 //*************************************************************************
 
 //Variables de puerto Target
-/*sc_event_queue  do_target_t;
-std::queue<tlm::tlm_generic_payload*> trans_pending_queue;
-std::queue<tlm::tlm_phase>            phase_pending_queue;
+sc_event_queue  do_target_t; 
+std::queue<tlm::tlm_generic_payload*> trans_pending_queue;   
+std::queue<tlm::tlm_phase>            phase_pending_queue;   
 std::queue<sc_time>                   delay_pending_queue;
-*/
 
-tlm::tlm_generic_payload* trans_pending;
-tlm::tlm_phase phase_pending;
+tlm::tlm_generic_payload* trans_pending;   
+tlm::tlm_phase phase_pending;   
 sc_time delay_pending;
 
 sc_event target_done_t;
@@ -62,7 +61,7 @@ int data_aux_Target;
 unsigned char *data_Target;
 sc_uint<32> address_Target;
 
-//Variables de puerto Iniciador
+//Variables de puerto Iniciador  
 sc_event_queue do_initiator_t;
 sc_event initiator_done_t, initiator_done_Resp_t;
 int data_Initiator;
@@ -72,8 +71,8 @@ bool comando_Initiator;
 //Variables internas
 float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
-sc_uint<16> adc_v; // vector data from XADC
-sc_uint<16> adc_i; // vector data from XADC
+sc_uint<16> adc_v;   // vector data from XADC
+sc_uint<16> adc_i;   // vector data from XADC
 
 bool  start;         // Active high, ready signal from estimador
 sc_uint<32> param_1; // 32 bit vector output of the estimador
@@ -86,10 +85,10 @@ sc_event calc_t, done_IP;
 float init_cond_1, init_cond_2; 
 float p1, p2, p1_aux, p2_aux, y_log, I, V;
 
-float Lambda = 3.99;                     	//Short-Circuit current
-float Psi = 5.1387085e-6;                	//Is current (saturation)
+float Lambda = 3.99;                     	    //Short-Circuit current
+float Psi = 5.1387085e-6;                	    //Is current (saturation)
 float alpha = 0.625;                 			//Thermal voltage relation
-float V_oc = 1/alpha*(log(Lambda/Psi));   //Open circuit voltage
+float V_oc = 1/alpha*(log(Lambda/Psi));         //Open circuit voltage
 float V_mpp = 17.4;                  			//Maximum power point voltage
 float I_mpp = 3.75;                  			//Maximum power point current
 float P_mpp = 65.25;                 			//Maximum power 
@@ -103,26 +102,6 @@ float sample_rate=1e6;
 float step=1/sample_rate;
 float n_samples=segundos*sample_rate;
 float V_TB, I_TB;
-
-//Variables ADC V
-sc_event do_adc_v_t, done_adc_v_t;
-
-bool cmd_adc_v;
-bool flag_adc_v = 1;
-int  data_adc_v;
-sc_uint<32> aux_v_adc;
-float  data_adc_v_float;
-long int addrs_adc_v;
-
-//Variables ADC I
-sc_event do_adc_i_t, done_adc_i_t;
-
-bool cmd_adc_i;
-bool flag_adc_i = 1;
-int  data_adc_i;
-sc_uint<32> aux_i_adc;
-float  data_adc_i_float;
-long int addrs_adc_i;
 
 //*************************************************************************
 //*************************************************************************
@@ -140,8 +119,9 @@ Device::Device(sc_core::sc_module_name name,
     m_peq(this, &Device::peq_cb),
     debug(debug),
     size(size),
-    offset(offset)
-{
+    offset(offset){
+    
+
     /* Register tlm transport functions */
     socket.register_b_transport(this, &Device::b_transport);
     socket.register_transport_dbg(this, &Device::transport_dbg);
@@ -151,32 +131,28 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    //SC_METHOD(TB);
-    //sensitive << target_done_event;
+    //SC_THREAD(TB);
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
     dont_initialize();
 }
 
-void
-Device::check_address(unsigned long long int addr)
-{
+void Device::check_address(unsigned long long int addr){
+
     if (addr < offset || addr >= offset + size)
         SC_REPORT_FATAL("Device", "Address out of range. Did you set an "
                                   "appropriate size and offset?");
 }
 
-void
-Device::b_transport(tlm::tlm_generic_payload& trans, sc_time& delay)
-{
+void Device::b_transport(tlm::tlm_generic_payload& trans, sc_time& delay){
+    
     /* Execute the read or write commands */
     execute_transaction(trans);
 }
 
-unsigned int
-Device::transport_dbg(tlm::tlm_generic_payload& trans)
-{
+unsigned int Device::transport_dbg(tlm::tlm_generic_payload& trans){
+
     check_address(trans.get_address());
 
     tlm::tlm_command cmd = trans.get_command();
@@ -207,17 +183,15 @@ Device::transport_dbg(tlm::tlm_generic_payload& trans)
 /* TLM-2 non-blocking transport method */
 tlm::tlm_sync_enum Device::nb_transport_fw(tlm::tlm_generic_payload& trans,
                                            tlm::tlm_phase& phase,
-                                           sc_time& delay)
-{
+                                           sc_time& delay){
     /* Queue the transaction until the annotated time has elapsed */
     m_peq.notify(trans, phase, delay);
     return tlm::TLM_ACCEPTED;
 }
 
-void
-Device::peq_cb(tlm::tlm_generic_payload& trans,
-               const tlm::tlm_phase& phase)
-{
+void Device::peq_cb(tlm::tlm_generic_payload& trans,
+               const tlm::tlm_phase& phase){
+    
     sc_time delay;
 
     if (phase == tlm::BEGIN_REQ) {
@@ -262,9 +236,8 @@ Device::peq_cb(tlm::tlm_generic_payload& trans,
     }
 }
 
-void
-Device::send_end_req(tlm::tlm_generic_payload& trans)
-{
+void Device::send_end_req(tlm::tlm_generic_payload& trans){
+    
     tlm::tlm_phase bw_phase;
     sc_time delay;
 
@@ -285,9 +258,8 @@ Device::send_end_req(tlm::tlm_generic_payload& trans)
     transaction_in_progress = &trans;
 }
 
-void
-Device::execute_transaction_process()
-{
+void Device::execute_transaction_process(){
+
     /* Execute the read or write commands */
     execute_transaction( *transaction_in_progress );
 
@@ -305,9 +277,8 @@ Device::execute_transaction_process()
     }
 }
 
-void
-Device::execute_transaction(tlm::tlm_generic_payload& trans)
-{
+void Device::execute_transaction(tlm::tlm_generic_payload& trans){
+
     check_address(trans.get_address());
 
     tlm::tlm_command cmd = trans.get_command();
@@ -359,9 +330,8 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-void
-Device::send_response(tlm::tlm_generic_payload& trans)
-{
+void Device::send_response(tlm::tlm_generic_payload& trans) {
+
     tlm::tlm_sync_enum status;
     tlm::tlm_phase bw_phase;
     sc_time delay;
@@ -382,7 +352,7 @@ Device::send_response(tlm::tlm_generic_payload& trans)
     trans.release();
 }
 
-void TB(){
+/*void  Device::TB(){
     if (start){
         cout << "Start" << endl;
     }
