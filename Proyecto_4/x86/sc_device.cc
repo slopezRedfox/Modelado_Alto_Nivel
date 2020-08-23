@@ -331,7 +331,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         if (Aux == 0xA){
             start = 1;
-            sc_event.notify(delay);
+            tb_do_event.notify(delay);
         }
     }
 
