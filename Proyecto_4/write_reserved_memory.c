@@ -12,7 +12,7 @@
             int fd;
             int *reserved_memory;
             int buffer;
-            buffer = 1;
+            buffer = 16;
 
             fd = open("/dev/mem", O_RDWR | O_SYNC);
             /* Returns a pointer to the 4GB point in /dev/mem - the start of my reserved memory. Only mapping 4096 bytes. */
