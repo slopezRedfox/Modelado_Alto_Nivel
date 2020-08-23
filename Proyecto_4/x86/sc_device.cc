@@ -35,6 +35,17 @@ using namespace std;
 #define T_sampling_Addr     0x43c00058
 #define Start_Addr          0x43c00060
 
+#define I_scale_factor    5
+#define V_scale_factor    22
+#define Ig                3.99
+#define GAMMA11           0.1
+#define GAMMA12           0
+#define GAMMA21           0
+#define GAMMA22           100
+#define INIT_ALPHA        0.55
+#define INIT_BETA         -13.0
+#define T_SAMPLING        1e-6
+
 #define INT2U32(x) *(uint32_t*)&x
 #define INT2U16(x) *(uint16_t*)&x
 
@@ -346,8 +357,14 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
     trans.release();
 }
 
+//================================================================
+//=====================     MAIN PART OF IP  =====================
+//================================================================
+
 void  Device::tb(){
-    if (start){
-        cout << "Start" << endl;
+    while(true){
+        if (start){
+            cout << "Start" << endl;
+        }
     }
 }
