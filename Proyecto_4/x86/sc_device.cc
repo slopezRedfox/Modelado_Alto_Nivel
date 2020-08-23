@@ -35,6 +35,17 @@ using namespace std;
 #define T_sampling_Addr     0x43c00058
 #define Start_Addr          0x43c00060
 
+#define I_scale_factor    5
+#define V_scale_factor    22
+#define Ig                3.99
+#define GAMMA11           0.1
+#define GAMMA12           0
+#define GAMMA21           0
+#define GAMMA22           100
+#define INIT_ALPHA        0.55
+#define INIT_BETA         -13.0
+#define T_SAMPLING        1e-6
+
 #define INT2U32(x) *(uint32_t*)&x
 #define INT2U16(x) *(uint16_t*)&x
 
@@ -127,6 +138,7 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
+    SC_THREAD(estimador_main);
     SC_THREAD(tb);
 
     SC_METHOD(execute_transaction_process);
@@ -346,8 +358,66 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
     trans.release();
 }
 
+//================================================================
+//=====================     MAIN PART OF IP  =====================
+//================================================================
+
+float InputVoltage(float t){
+    return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
+}
+
+float InputCurrent(float t){
+    return (Lambda - exp( alpha * InputVoltage(t) + b));
+}
+
+uint16_t to_fixed_16(float a){
+    a=a*pow(2,16);
+    int b = (int)a;
+    return INT2U16(b);
+}
+
+uint32_t to_fixed_32(float a){
+    a=a*pow(2,21);
+    int b = (int)a;
+    return INT2U32(b);
+}
+
+void process_sample() {
+    calc_t.notify(calc_delay, SC_NS);
+}
+
+void  Device::estimador_main(){
+
+    while(true){
+        wait(calc_t);
+        if(start){
+            wait(120, SC_NS);
+            cout << "Estimador *******************************"    << endl;
+            cout << "Estimador        === SUMMERY ==="             << endl;
+            cout << "Estimador I_scale_factor: " << I_scale_factor << endl;
+            cout << "Estimador V_scale_factor: " << V_scale_factor << endl;
+            cout << "Estimador Ig            : " << Ig             << endl;
+            cout << "Estimador GAMMA11       : " << GAMMA11        << endl;
+            cout << "Estimador GAMMA12       : " << GAMMA12        << endl;
+            cout << "Estimador GAMMA21       : " << GAMMA21        << endl;
+            cout << "Estimador GAMMA22       : " << GAMMA22        << endl;
+            cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA     << endl;
+            cout << "Estimador INIT_BETA     : " << INIT_BETA      << endl;
+            cout << "Estimador T_SAMPLING    : " << T_SAMPLING     << endl;
+            cout << "Estimador *******************************"    << endl;
+            
+            init_cond_1 = INIT_ALPHA_e;
+            init_cond_2 = INIT_BETA_e;
+            start = 0;
+        }
+    }
+}
+
 void  Device::tb(){
-    if (start){
-        cout << "Start" << endl;
+    while{
+        if (start){
+            process_sample();
+            cout << "Start" << endl;
+        }
     }
 }
