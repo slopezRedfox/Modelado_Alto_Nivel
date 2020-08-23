@@ -362,9 +362,10 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
 //================================================================
 
 void  Device::tb(){
-    while(true){
+    //while(true){
         if (start){
+            wait(10,SC_NS);
             cout << "Start" << endl;
         }
-    }
+    //}
 }
