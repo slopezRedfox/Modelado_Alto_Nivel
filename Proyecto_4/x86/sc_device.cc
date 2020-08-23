@@ -44,13 +44,13 @@ using namespace std;
 
 //*************************************************************************
 //*************************************************************************
-//*************************************************************************
+//*************************************************************************/
 
 //Variables de puerto Target
-sc_event_queue  do_target_t; 
+sc_event_queue  do_target_t;
 
-tlm::tlm_generic_payload* trans_pending;   
-tlm::tlm_phase phase_pending;   
+tlm::tlm_generic_payload* trans_pending;
+tlm::tlm_phase phase_pending;
 sc_time delay_pending;
 
 sc_event target_done_t;
@@ -58,7 +58,7 @@ int data_aux_Target;
 unsigned char *data_Target;
 sc_uint<32> address_Target;
 
-//Variables de puerto Iniciador  
+//Variables de puerto Iniciador
 sc_event_queue do_initiator_t;
 sc_event initiator_done_t, initiator_done_Resp_t;
 int data_Initiator;
@@ -79,16 +79,16 @@ sc_uint<32> current;
 
 sc_event calc_t, done_IP;
 
-float init_cond_1, init_cond_2; 
+float init_cond_1, init_cond_2;
 float p1, p2, p1_aux, p2_aux, y_log, I, V;
 
-float Lambda = 3.99;                     	    //Short-Circuit current
-float Psi = 5.1387085e-6;                	    //Is current (saturation)
+float Lambda = 3.99;                     	        //Short-Circuit current
+float Psi = 5.1387085e-6;                	        //Is current (saturation)
 float alpha = 0.625;                 			//Thermal voltage relation
-float V_oc = 1/alpha*(log(Lambda/Psi));         //Open circuit voltage
+float V_oc = 1/alpha*(log(Lambda/Psi));                 //Open circuit voltage
 float V_mpp = 17.4;                  			//Maximum power point voltage
 float I_mpp = 3.75;                  			//Maximum power point current
-float P_mpp = 65.25;                 			//Maximum power 
+float P_mpp = 65.25;                 			//Maximum power
 float y = log(Lambda);              			//Short-Circuit logarithm
 float b = log(Psi);                 			//Is current logarithm
 float V_cte = 16.69;
@@ -117,7 +117,6 @@ Device::Device(sc_core::sc_module_name name,
     debug(debug),
     size(size),
     offset(offset){
-    
 
     /* Register tlm transport functions */
     socket.register_b_transport(this, &Device::b_transport);
@@ -128,7 +127,7 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    //SC_THREAD(TB);
+    SC_THREAD(tb);
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -143,7 +142,7 @@ void Device::check_address(unsigned long long int addr){
 }
 
 void Device::b_transport(tlm::tlm_generic_payload& trans, sc_time& delay){
-    
+
     /* Execute the read or write commands */
     execute_transaction(trans);
 }
@@ -188,7 +187,7 @@ tlm::tlm_sync_enum Device::nb_transport_fw(tlm::tlm_generic_payload& trans,
 
 void Device::peq_cb(tlm::tlm_generic_payload& trans,
                const tlm::tlm_phase& phase){
-    
+
     sc_time delay;
 
     if (phase == tlm::BEGIN_REQ) {
@@ -234,7 +233,7 @@ void Device::peq_cb(tlm::tlm_generic_payload& trans,
 }
 
 void Device::send_end_req(tlm::tlm_generic_payload& trans){
-    
+
     tlm::tlm_phase bw_phase;
     sc_time delay;
 
@@ -349,8 +348,8 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
     trans.release();
 }
 
-/*void  Device::TB(){
+void  Device::tb(){
     if (start){
         cout << "Start" << endl;
     }
-}*/
+}
