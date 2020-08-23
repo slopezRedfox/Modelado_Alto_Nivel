@@ -9,6 +9,7 @@
     #define RESERVED_MEMORY_OFFSET  0x1ff00000     /* Offset */
 
     int main() {
+            int fd;
             int *reserved_memory;
             int buffer;
             buffer = 1;
