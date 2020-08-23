@@ -13,10 +13,13 @@
             char *reserved_memory;
             int buffer = 0x01;
 
+            int *reserved_memory;
+            int buffer;
+            buffer = 1;
 
             fd = open("/dev/mem", O_RDWR | O_SYNC);
             /* Returns a pointer to the 4GB point in /dev/mem - the start of my reserved memory. Only mapping 4096 bytes. */
-            reserved_memory  = (char *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
+            reserved_memory  = (int *) mmap(0, 1, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
 
             printf("data: %x\n", buffer);
             if (reserved_memory == MAP_FAILED) {
@@ -24,8 +27,9 @@
                     printf("ERRNO: %s\n", strerror(errno));
                     return -1;
             }
+	    memcpy(reserved_memory, &buffer, 4);
 
-            sprintf(reserved_memory, "%d", buffer);
+            //sprintf(reserved_memory, "%d", buffer);
             //printf("\n Print reseved\n\n");
             //printf("data  reseved: %x \n", aux);
             return 0;
