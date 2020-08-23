@@ -57,7 +57,7 @@ struct Device: sc_module
     /** Method process that runs on target_done_event */
     void execute_transaction_process();
 
-    //void tb();
+    void tb();
     //void estimador_main();
 
     /** Helping function that checks if a requested address is with range */
