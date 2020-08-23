@@ -140,6 +140,11 @@ Device::Device(sc_core::sc_module_name name,
 
     SC_METHOD(tb);
     sensitive << tb_do_event;
+    dont_initialize();
+
+    SC_METHOD(estimador_main);
+    sensitive << tb_do_event;
+    dont_initialize();
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -386,9 +391,69 @@ void process_sample() {
     calc_t.notify(calc_delay, SC_NS);
 }
 
-void  Device::tb(){
+//Funcion estimador_main
+void  Device::estimador_main(){
+
+    V_TB = InputVoltage(t)/22;
+    I_TB = InputCurrent(t)/5;
+
+    adc_v = to_fixed_16(V_TB);
+    adc_i = to_fixed_16(I_TB);
+
     if (start){
-        wait(10,SC_NS);
-        cout << "Start" << endl;
+        cout << "Estimador *******************************"    << endl;
+        cout << "Estimador        === SUMMERY ==="             << endl;
+        cout << "Estimador I_scale_factor: " << I_scale_factor << endl;
+        cout << "Estimador V_scale_factor: " << V_scale_factor << endl;
+        cout << "Estimador Ig            : " << Ig             << endl;
+        cout << "Estimador GAMMA11       : " << GAMMA11        << endl;
+        cout << "Estimador GAMMA12       : " << GAMMA12        << endl;
+        cout << "Estimador GAMMA21       : " << GAMMA21        << endl;
+        cout << "Estimador GAMMA22       : " << GAMMA22        << endl;
+        cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA     << endl;
+        cout << "Estimador INIT_BETA     : " << INIT_BETA      << endl;
+        cout << "Estimador T_SAMPLING    : " << T_SAMPLING     << endl;
+        cout << "Estimador *******************************"    << endl;
+        
+        init_cond_1 = INIT_ALPHA_e;
+        init_cond_2 = INIT_BETA_e;
+        start = 0;
     }
+
+    I = adc_i / pow(2,16);
+    V = adc_v / pow(2,16);
+
+    I *= I_scale_factor;
+    V *= V_scale_factor;
+    y_log = log(Ig - I);
+    p1=((GAMMA11*V+GAMMA12)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_1;
+    p2=((GAMMA21*V+GAMMA22)*(y_log-(V*init_cond_1)-init_cond_2))*T_SAMPLING+init_cond_2;
+    init_cond_1=p1;
+    init_cond_2=p2;
+
+    cout<<"param_1 = "<< p1 <<"   param_2 = "<< p2 <<endl<<endl;
+
+    param_1 = to_fixed_32(p1);
+    cout << "Estimador p1: " << p1 << endl;
+    cout << "Estimador p1: " << hex << param_1 << endl;
+
+    param_2 = to_fixed_32(p2);
+    cout << "Estimador p2: " << p2 << endl;
+    cout << "Estimador p2: " << hex << param_2 << endl;
+
+    volt = to_fixed_32(V);
+    cout << "Estimador V: " << V << endl;
+    cout << "Estimador V: " << hex << volt << endl;
+
+    current = to_fixed_32(I);
+    cout << "Estimador I: " << I << endl;
+    cout << "Estimador I: " << hex << current << endl;
+
+    cout << "Estimador1 time out " << "@" << sc_time_stamp()<< endl;
+}
+
+//Funcion TB
+void  Device::tb(){
+    cout << "*******" << endl;
+    cout <<  "Start"  << endl;
 }
