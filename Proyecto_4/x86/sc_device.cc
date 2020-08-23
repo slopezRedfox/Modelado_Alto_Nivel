@@ -325,7 +325,7 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
 
     unsigned char *mem_array_ptr = mem + adr;
     unsigned char *Aux_addr      = mem + 0x1ff00000;
-    int *Aux;
+    int Aux;
 
     /* Load / Store the access: */
     //cout << "Comando Execute_transaction: " << cmd << endl;
@@ -348,7 +348,6 @@ Device::execute_transaction(tlm::tlm_generic_payload& trans)
         std::memcpy(&Aux, Aux_addr, 4);
 
         cout << "data: " << Aux << endl;
-        cout << "data *: " << *Aux << endl;
 
         /*unsigned char * see_me = mem + 0x1ff00008;
         std::memcpy(&Aux, see_me, len);
