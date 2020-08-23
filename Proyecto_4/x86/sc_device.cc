@@ -48,9 +48,6 @@ using namespace std;
 
 //Variables de puerto Target
 sc_event_queue  do_target_t; 
-std::queue<tlm::tlm_generic_payload*> trans_pending_queue;   
-std::queue<tlm::tlm_phase>            phase_pending_queue;   
-std::queue<sc_time>                   delay_pending_queue;
 
 tlm::tlm_generic_payload* trans_pending;   
 tlm::tlm_phase phase_pending;   
@@ -356,4 +353,4 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
     if (start){
         cout << "Start" << endl;
     }
-}
+}*/
