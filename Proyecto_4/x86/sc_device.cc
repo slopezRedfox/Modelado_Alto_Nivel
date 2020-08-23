@@ -138,8 +138,8 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    SC_THREAD(estimador_main);
-    SC_THREAD(tb);
+    //SC_THREAD(estimador_main);
+    //SC_THREAD(tb);
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -362,7 +362,7 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
 //=====================     MAIN PART OF IP  =====================
 //================================================================
 
-float InputVoltage(float t){
+/*float InputVoltage(float t){
     return (V_cte + (0.3 * V_cte * sin(2 * M_PI * 1000 * t)));
 }
 
@@ -389,7 +389,7 @@ void process_sample() {
 void  Device::estimador_main(){
 
     while(true){
-        wait(calc_t);
+        //wait(calc_t);
         if(start){
             wait(120, SC_NS);
             cout << "Estimador *******************************"    << endl;
@@ -420,4 +420,4 @@ void  Device::tb(){
             cout << "Start" << endl;
         }
     }
-}
+}*/
