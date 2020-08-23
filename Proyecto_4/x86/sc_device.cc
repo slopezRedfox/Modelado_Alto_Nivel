@@ -138,7 +138,9 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    SC_THREAD(tb);
+    SC_METHOD(tb);
+    sensitive << tb_do_event;
+    dont_initialize();
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -329,6 +331,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         if (Aux == 0xA){
             start = 1;
+            sc_event.notify(delay);
         }
     }
 
@@ -362,10 +365,8 @@ void Device::send_response(tlm::tlm_generic_payload& trans) {
 //================================================================
 
 void  Device::tb(){
-    //while(true){
-        if (start){
-            wait(10,SC_NS);
-            cout << "Start" << endl;
-        }
-    //}
+    if (start){
+        wait(10,SC_NS);
+        cout << "Start" << endl;
+    }
 }

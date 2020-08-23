@@ -19,6 +19,7 @@ struct Device: sc_module
     /** TLM related member variables: */
     tlm::tlm_generic_payload*  transaction_in_progress;
     sc_event                   target_done_event;
+    sc_event                   tb_do_event;
     bool                       response_in_progress;
     bool                       debug;
     tlm::tlm_generic_payload*  next_response_pending;
