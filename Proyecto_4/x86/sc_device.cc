@@ -69,8 +69,6 @@ sc_uint<32> param_2; // 32 bit vector output of the estimador
 sc_uint<32> volt;
 sc_uint<32> current;
 
-sc_event calc_t, done_IP;
-
 float init_cond_1, init_cond_2;
 float p1, p2, p1_aux, p2_aux, y_log, I, V;
 
@@ -120,7 +118,7 @@ Device::Device(sc_core::sc_module_name name,
     mem = new unsigned char[size];
 
     SC_METHOD(estimador_main);
-    sensitive << tb_do_event;
+    sensitive << calc_t;
     dont_initialize();
 
     //SC_METHOD(tb);
@@ -438,7 +436,11 @@ void  Device::estimador_main(){
 void  Device::tb(){
     while(true){
         wait(tb_do_event);
+        cout << endl;
         cout << "*******" << endl;
         cout <<  "Start"  << endl;
+        cout << "*******" << endl << endl;
+
+        calc_t.notify();
     }
 }

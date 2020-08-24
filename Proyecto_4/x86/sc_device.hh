@@ -20,6 +20,8 @@ struct Device: sc_module
     tlm::tlm_generic_payload*  transaction_in_progress;
     sc_event                   target_done_event;
     sc_event                   tb_do_event;
+    sc_event                   calc_t;
+    sc_event                   done_IP;
     bool                       response_in_progress;
     bool                       debug;
     tlm::tlm_generic_payload*  next_response_pending;
