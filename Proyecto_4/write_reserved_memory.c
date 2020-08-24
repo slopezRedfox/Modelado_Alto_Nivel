@@ -4,8 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <stdint.h>
+
 #include <sys/mman.h>
 #include <unistd.h>
+#include <fstream>
 
 #define RESERVED_MEMORY_OFFSET  0x1ff00000  /* Offset */
 
@@ -165,7 +168,7 @@ int main() {
         printf("\n\n P1: %d \n", p1/pow(2,21));
         printf("\n\n P2: %d \n", p2/pow(2,21));
     }
-    
+
     file_Signals.close();
     return 0;
 }
