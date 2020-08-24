@@ -315,6 +315,18 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         if (Aux == 0xA){
             start = 1;
+
+            I_scale_factor_e = I_scale_factor;
+            V_scale_factor_e = V_scale_factor;
+            Ig_e             = Ig;
+            GAMMA11_e        = GAMMA11;
+            GAMMA12_e        = GAMMA12;
+            GAMMA21_e        = GAMMA21;
+            GAMMA22_e        = GAMMA22;
+            INIT_ALPHA_e     = INIT_ALPHA;
+            INIT_BETA_e      = INIT_BETA;
+            T_SAMPLING_e     = T_SAMPLING;
+
             tb_do_event.notify();
         }
     }
@@ -370,26 +382,20 @@ uint32_t to_fixed_32(float a){
 //Funcion estimador_main
 void  Device::estimador_main(){
 
-    V_TB = InputVoltage(t)/22;
-    I_TB = InputCurrent(t)/5;
-
-    adc_v = to_fixed_16(V_TB);
-    adc_i = to_fixed_16(I_TB);
-
     if (start){
-        cout << "Estimador *******************************"    << endl;
-        cout << "Estimador        === SUMMERY ==="             << endl;
-        cout << "Estimador I_scale_factor: " << I_scale_factor << endl;
-        cout << "Estimador V_scale_factor: " << V_scale_factor << endl;
-        cout << "Estimador Ig            : " << Ig             << endl;
-        cout << "Estimador GAMMA11       : " << GAMMA11        << endl;
-        cout << "Estimador GAMMA12       : " << GAMMA12        << endl;
-        cout << "Estimador GAMMA21       : " << GAMMA21        << endl;
-        cout << "Estimador GAMMA22       : " << GAMMA22        << endl;
-        cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA     << endl;
-        cout << "Estimador INIT_BETA     : " << INIT_BETA      << endl;
-        cout << "Estimador T_SAMPLING    : " << T_SAMPLING     << endl;
-        cout << "Estimador *******************************"    << endl;
+        cout << "Estimador *******************************"      << endl;
+        cout << "Estimador        === SUMMERY ==="               << endl;
+        cout << "Estimador I_scale_factor: " << I_scale_factor_e << endl;
+        cout << "Estimador V_scale_factor: " << V_scale_factor_e << endl;
+        cout << "Estimador Ig            : " << Ig_e             << endl;
+        cout << "Estimador GAMMA11       : " << GAMMA11_e        << endl;
+        cout << "Estimador GAMMA12       : " << GAMMA12_e        << endl;
+        cout << "Estimador GAMMA21       : " << GAMMA21_e        << endl;
+        cout << "Estimador GAMMA22       : " << GAMMA22_e        << endl;
+        cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
+        cout << "Estimador INIT_BETA     : " << INIT_BETA_e      << endl;
+        cout << "Estimador T_SAMPLING    : " << T_SAMPLING_e     << endl;
+        cout << "Estimador *******************************"      << endl;
         
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
@@ -424,19 +430,28 @@ void  Device::estimador_main(){
     current = to_fixed_32(I);
     cout << "Estimador I: " << I << endl;
     cout << "Estimador I: " << hex << current << endl;
-
-    cout << "Estimador1 time out " << "@" << sc_time_stamp()<< endl;
 }
 
 //Funcion TB
 void  Device::tb(){
-    while(true){
-        wait(tb_do_event);
-        cout << endl;
-        cout << "*******" << endl;
-        cout <<  "Start"  << endl;
-        cout << "*******" << endl << endl;
+    wait(tb_do_event);
 
+    for (int n=0; n < 1; n++){
+
+        V_TB = InputVoltage(t)/22;
+        I_TB = InputCurrent(t)/5;
+
+        adc_v = to_fixed_16(V_TB);
+        adc_i = to_fixed_16(I_TB);
+
+        cout << endl;
+        cout << "**************" << endl;
+        cout << "Enter Function" << endl;
+        cout << "**************" << endl;
+        cout << endl;
         calc_t.notify();
+        
+        //-------------------------------
+        t = t + step;
     }
 }
