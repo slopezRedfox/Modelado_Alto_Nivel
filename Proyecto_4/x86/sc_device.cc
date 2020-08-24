@@ -474,11 +474,9 @@ void  Device::tb(){
         //-------------------------------
         t = t + step;
     }
-    
+
     cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
-    
+
     //Close files
     sc_close_vcd_trace_file(wf);
-    file_Signals.close();
-    file_Params.close(); 
 }
