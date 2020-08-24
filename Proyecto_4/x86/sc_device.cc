@@ -367,10 +367,6 @@ uint32_t to_fixed_32(float a){
     return INT2U32(b);
 }
 
-void process_sample() {
-    calc_t.notify(calc_delay, SC_NS);
-}
-
 //Funcion estimador_main
 void  Device::estimador_main(){
 
