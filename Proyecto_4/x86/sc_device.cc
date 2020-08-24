@@ -309,14 +309,14 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         cout << "WRITE COMAND" << endl;
         cout << "addr: " << adr << endl;
-        cout << "len : " << len << endl;
+        //cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
         std::memcpy(&Aux_1, Aux_addr_1, 4);
         std::memcpy(&Aux_2, Aux_addr_2, 4);
 
         cout << "data1: " << Aux_1 << endl;
-        cout << "data2: " << Aux_2 << endl;
+        //cout << "data2: " << Aux_2 << endl;
 
         if (Aux_1 == 0xA){
             start = 1;

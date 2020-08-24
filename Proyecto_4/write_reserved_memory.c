@@ -19,12 +19,13 @@ int main() {
     /* Returns a pointer to the 4GB point in /dev/mem - the start of my reserved memory. Only mapping 4096 bytes. */
     reserved_memory_1 = (int *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
 
-    reserved_memory_2 = reserved_memory_1 + 0x23D00020/4; //Direccion 0x1ff00004
-
     printf("data: %x\n", buffer_1);
     printf("data: %x\n", buffer_2);
 
+
     //============================================
+    reserved_memory_2 = reserved_memory_1 + 8; //Direccion 0x1ff00020
+
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
         printf("ERRNO: %s\n", strerror(errno));
@@ -33,12 +34,111 @@ int main() {
     memcpy(reserved_memory_2, &buffer_2, 4);
 
     //============================================
+    reserved_memory_2 = reserved_memory_1 + 9; //Direccion 0x1ff00024
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 10; //Direccion 0x1ff00028
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 11; //Direccion 0x1ff0002c
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 12; //Direccion 0x1ff00030
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 14; //Direccion 0x1ff00038
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 16; //Direccion 0x1ff00040
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 18; //Direccion 0x1ff00048
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 20; //Direccion 0x1ff00050
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
+    buffer_2 = 0x22;
+    reserved_memory_2 = reserved_memory_1 + 22; //Direccion 0x1ff00058
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+    //============================================
+    reserved_memory_2 = reserved_memory_1 + 24; //Direccion 0x1ff00060
+    if (reserved_memory_2 == MAP_FAILED) {
+        printf("Failed to creating mapping_2.\n");
+        printf("ERRNO: %s\n", strerror(errno));
+        return -1;
+    }
+    memcpy(reserved_memory_2, &buffer_2, 4);
+
+
+    //============================================
     if (reserved_memory_1 == MAP_FAILED) {
         printf("Failed to creating mapping_1.\n");
         printf("ERRNO: %s\n", strerror(errno));
         return -1;
     }
-    memcpy(reserved_memory_1, &buffer_1, 4);
+    memcpy(&buffer_1, reserved_memory_1 + 22, 4);
+    printf("\n\n buffer_1: %d \n", buffer_1);
     return 0;
 }
 
