@@ -413,30 +413,28 @@ void  Device::estimador_main(){
     init_cond_1=p1;
     init_cond_2=p2;
 
-    cout<<"param_1 = "<< p1 <<"   param_2 = "<< p2 <<endl<<endl;
-
     param_1 = to_fixed_32(p1);
-    cout << "Estimador p1: " << p1 << endl;
-    cout << "Estimador p1: " << hex << param_1 << endl;
+    cout << "Estimador p1: "     << p1;
+    cout << "Estimador p1 hex: " << hex << param_1 << endl;
 
     param_2 = to_fixed_32(p2);
-    cout << "Estimador p2: " << p2 << endl;
-    cout << "Estimador p2: " << hex << param_2 << endl;
+    cout << "Estimador p2: "     << p2;
+    cout << "Estimador p2 hex: " << hex << param_2 << endl;
 
     volt = to_fixed_32(V);
-    cout << "Estimador V: " << V << endl;
-    cout << "Estimador V: " << hex << volt << endl;
+    cout << "Estimador V : "     << V;
+    cout << "Estimador V  hex: " << hex << volt << endl;
 
     current = to_fixed_32(I);
-    cout << "Estimador I: " << I << endl;
-    cout << "Estimador I: " << hex << current << endl;
+    cout << "Estimador I : "     << I;
+    cout << "Estimador I  hex: " << hex << current << endl << endl;
 }
 
 //Funcion TB
 void  Device::tb(){
     wait(tb_do_event);
 
-    for (int n=0; n < 1; n++){
+    for (int n=0; n < 5; n++){
 
         V_TB = InputVoltage(t)/22;
         I_TB = InputCurrent(t)/5;
