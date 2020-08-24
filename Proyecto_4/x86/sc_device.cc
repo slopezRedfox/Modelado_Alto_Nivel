@@ -23,17 +23,17 @@ using namespace std;
 //Constans from memory
 
 //Direcciones de registro de solo escritura del estimador
-#define I_scale_factor_Addr 0x43c00020
-#define V_scale_factor_Addr 0x43c00024
-#define Ig_value_Addr       0x43c00028
-#define Gamma11_Addr        0x43c0002c
-#define Gamma12_Addr        0x43c00030
-#define Gamma21_Addr        0x43c00038
-#define Gamma22_Addr        0x43c00040
-#define Init_alpha_Addr     0x43c00048
-#define Init_beta_Addr      0x43c00050
-#define T_sampling_Addr     0x43c00058
-#define Start_Addr          0x43c00060
+#define I_scale_factor_Addr 0x1ff00020
+#define V_scale_factor_Addr 0x1ff00024
+#define Ig_value_Addr       0x1ff00028
+#define Gamma11_Addr        0x1ff0002c
+#define Gamma12_Addr        0x1ff00030
+#define Gamma21_Addr        0x1ff00038
+#define Gamma22_Addr        0x1ff00040
+#define Init_alpha_Addr     0x1ff00048
+#define Init_beta_Addr      0x1ff00050
+#define T_sampling_Addr     0x1ff00058
+#define Start_Addr          0x1ff00060
 
 #define I_scale_factor    5
 #define V_scale_factor    22
@@ -289,7 +289,6 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
     unsigned char *mem_array_ptr = mem + adr;
     unsigned char *Aux_addr_1    = mem + 0x1ff00000;
-    unsigned char *Aux_addr_2    = mem + 0x1ff00004;
     int Aux_1;
     int Aux_2;
 
@@ -312,25 +311,42 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         //cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
-        std::memcpy(&Aux_1, Aux_addr_1, 4);
-        std::memcpy(&Aux_2, Aux_addr_2, 4);
+        std::memcpy(&Aux_1, Aux_addr_1, 4);        
 
+        std::memcpy(&Aux_2,mem + I_scale_factor, 4);
+        I_scale_factor_e = Aux_2;
+
+        std::memcpy(&Aux_2,mem + V_scale_factor, 4);
+        V_scale_factor_e = Aux_2;
+
+        std::memcpy(&Aux_2,mem + Ig, 4);
+        Ig_e             = Aux_2;
+
+        std::memcpy(&Aux_2,mem + GAMMA11, 4);
+        GAMMA11_e        = Aux_2;
+
+        std::memcpy(&Aux_2,mem + GAMMA12, 4);
+        GAMMA12_e        = Aux_2;
+
+        std::memcpy(&Aux_2,mem + GAMMA21, 4);
+        GAMMA21_e        = Aux_2;
+
+        std::memcpy(&Aux_2,mem + GAMMA22, 4);
+        GAMMA22_e        = Aux_2;
+
+        std::memcpy(&Aux_2,mem + INIT_ALPHA, 4);
+        INIT_ALPHA_e     = Aux_2;
+
+        std::memcpy(&Aux_2,mem + INIT_BETA, 4);
+        INIT_BETA_e      = Aux_2;
+
+        std::memcpy(&Aux_2,mem + T_SAMPLING, 4);
+        T_SAMPLING_e     = Aux_2;
+        
         cout << "data1: " << Aux_1 << endl;
-        //cout << "data2: " << Aux_2 << endl;
-
-        if (Aux_1 == 0xA){
+        if (Aux_1 == 0x1){
             start = 1;
 
-            I_scale_factor_e = I_scale_factor;
-            V_scale_factor_e = V_scale_factor;
-            Ig_e             = Ig;
-            GAMMA11_e        = GAMMA11;
-            GAMMA12_e        = GAMMA12;
-            GAMMA21_e        = GAMMA21;
-            GAMMA22_e        = GAMMA22;
-            INIT_ALPHA_e     = INIT_ALPHA;
-            INIT_BETA_e      = INIT_BETA;
-            T_SAMPLING_e     = T_SAMPLING;
 
             tb_do_event.notify();
         }
