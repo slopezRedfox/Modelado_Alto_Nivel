@@ -58,12 +58,12 @@ using namespace std;
 //*************************************************************************/
 
 //Variables internas
-float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
+int I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
 sc_uint<16> adc_v;   // vector data from XADC
 sc_uint<16> adc_i;   // vector data from XADC
 
-bool  start;         // Active high, ready signal from estimador
+int   start;         // Active high, ready signal from estimador
 sc_uint<32> param_1; // 32 bit vector output of the estimador
 sc_uint<32> param_2; // 32 bit vector output of the estimador
 sc_uint<32> volt;
@@ -311,43 +311,44 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         //cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
-        std::memcpy(&Aux_1, Aux_addr_1, 4);        
+        std::memcpy(&Aux_1, Aux_addr_1, 4);
 
-        std::memcpy(&Aux_2,mem + I_scale_factor, 4);
+        std::memcpy(&Aux_2,mem + I_scale_factor_Addr, 4);
         I_scale_factor_e = Aux_2;
 
-        std::memcpy(&Aux_2,mem + V_scale_factor, 4);
+        std::memcpy(&Aux_2,mem + V_scale_factor_Addr, 4);
         V_scale_factor_e = Aux_2;
 
-        std::memcpy(&Aux_2,mem + Ig, 4);
+        std::memcpy(&Aux_2,mem + Ig_value_Addr, 4);
         Ig_e             = Aux_2;
 
-        std::memcpy(&Aux_2,mem + GAMMA11, 4);
+        std::memcpy(&Aux_2,mem + Gamma11_Addr, 4);
         GAMMA11_e        = Aux_2;
 
-        std::memcpy(&Aux_2,mem + GAMMA12, 4);
+        std::memcpy(&Aux_2,mem + Gamma12_Addr, 4);
         GAMMA12_e        = Aux_2;
 
-        std::memcpy(&Aux_2,mem + GAMMA21, 4);
+        std::memcpy(&Aux_2,mem + Gamma21_Addr, 4);
         GAMMA21_e        = Aux_2;
 
-        std::memcpy(&Aux_2,mem + GAMMA22, 4);
+        std::memcpy(&Aux_2,mem + Gamma22_Addr, 4);
         GAMMA22_e        = Aux_2;
 
-        std::memcpy(&Aux_2,mem + INIT_ALPHA, 4);
+        std::memcpy(&Aux_2,mem + Init_alpha_Addr, 4);
         INIT_ALPHA_e     = Aux_2;
 
-        std::memcpy(&Aux_2,mem + INIT_BETA, 4);
+        std::memcpy(&Aux_2,mem + Init_beta_Addr, 4);
         INIT_BETA_e      = Aux_2;
 
-        std::memcpy(&Aux_2,mem + T_SAMPLING, 4);
+        std::memcpy(&Aux_2,mem + T_sampling_Addr, 4);
         T_SAMPLING_e     = Aux_2;
         
+        std::memcpy(&Aux_2,mem + Start_Addr, 4);
+        start            = Aux_2;
+
         cout << "data1: " << Aux_1 << endl;
-        if (Aux_1 == 0x1){
+        if (start == 0x1){
             start = 1;
-
-
             tb_do_event.notify();
         }
     }
