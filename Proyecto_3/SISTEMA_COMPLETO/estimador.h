@@ -858,8 +858,8 @@ struct Estimador: sc_module {
       adc_v = to_fixed_16(V_TB);
       adc_i = to_fixed_16(I_TB);
 
-      file_Signals << t <<","<< I_TB << ","<< V_TB << endl;
-      file_Params << t << ","<< param_1 << ","<< param_2 << endl;
+      file_Signals << t << "," << I_TB    << "," << V_TB    << endl;
+      file_Params  << t << "," << param_1 << "," << param_2 << endl;
       t = t + step;
 
       cout << "Estimador1 " << "@" << sc_time_stamp()<< endl;

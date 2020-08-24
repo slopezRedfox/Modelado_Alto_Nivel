@@ -34,6 +34,9 @@ using namespace std;
 #define Init_beta_Addr      0x1ff00050
 #define T_sampling_Addr     0x1ff00058
 #define Start_Addr          0x1ff00060
+#define p1_Addr             0x1ff00064
+#define p2_Addr             0x1ff00068
+
 
 #define I_scale_factor    5
 #define V_scale_factor    22
@@ -440,19 +443,17 @@ void  Device::estimador_main(){
 
     param_1 = to_fixed_32(p1);
     cout << endl << "Estimador p1: "     << p1 << endl;
-    //cout << "Estimador p1 hex: " << hex << param_1 << endl;
+    std::memcpy(mem + p1_Addr, param_1, 4);
 
     param_2 = to_fixed_32(p2);
     cout << "Estimador p2: "     << p2 << endl;
-    //cout << "Estimador p2 hex: " << hex << param_2 << endl;
+    std::memcpy(mem + p2_Addr, param_1, 4);
 
     volt = to_fixed_32(V);
     cout << "Estimador V : "     << V << endl;
-    //cout << "Estimador V  hex: " << hex << volt << endl;
 
     current = to_fixed_32(I);
     cout << "Estimador I : "     << I << endl << endl;
-    //cout << "Estimador I  hex: " << hex << current << endl << endl;
 
     done_IP.notify();
 }
