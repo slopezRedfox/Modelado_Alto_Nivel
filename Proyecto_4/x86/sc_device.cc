@@ -388,19 +388,22 @@ uint32_t to_fixed_32(float a){
 void  Device::estimador_main(){
 
     if (start){
-        cout << "Estimador *******************************"      << endl;
-        cout << "Estimador        === SUMMERY ==="               << endl;
-        cout << "Estimador I_scale_factor: " << I_scale_factor_e << endl;
-        cout << "Estimador V_scale_factor: " << V_scale_factor_e << endl;
-        cout << "Estimador Ig            : " << Ig_e             << endl;
-        cout << "Estimador GAMMA11       : " << GAMMA11_e        << endl;
-        cout << "Estimador GAMMA12       : " << GAMMA12_e        << endl;
-        cout << "Estimador GAMMA21       : " << GAMMA21_e        << endl;
-        cout << "Estimador GAMMA22       : " << GAMMA22_e        << endl;
-        cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
-        cout << "Estimador INIT_BETA     : " << INIT_BETA_e      << endl;
-        cout << "Estimador T_SAMPLING    : " << T_SAMPLING_e     << endl;
-        cout << "Estimador *******************************"      << endl << endl;
+        cout << endl << "       ***************" << endl;
+        cout << "         Enter Start" << endl;
+        cout << "       ***************" << endl;
+        cout << "*******************************"      << endl;
+        cout << "       === SUMMERY ==="               << endl;
+        cout << "I_scale_factor: " << I_scale_factor_e << endl;
+        cout << "V_scale_factor: " << V_scale_factor_e << endl;
+        cout << "Ig            : " << Ig_e             << endl;
+        cout << "GAMMA11       : " << GAMMA11_e        << endl;
+        cout << "GAMMA12       : " << GAMMA12_e        << endl;
+        cout << "GAMMA21       : " << GAMMA21_e        << endl;
+        cout << "GAMMA22       : " << GAMMA22_e        << endl;
+        cout << "INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
+        cout << "INIT_BETA     : " << INIT_BETA_e      << endl;
+        cout << "T_SAMPLING    : " << T_SAMPLING_e     << endl;
+        cout << "*******************************"      << endl << endl;
 
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
@@ -441,6 +444,19 @@ void  Device::estimador_main(){
 void  Device::tb(){
     wait(tb_do_event);
 
+    // Open VCD file
+    sc_trace_file *wf = sc_create_vcd_trace_file("estimador");
+    wf->set_time_unit(1, SC_NS);
+
+    // Dump the desired signals
+    sc_trace(wf, adc_v, "adc_v");
+    sc_trace(wf, adc_i, "adc_i");
+    sc_trace(wf, start, "start");
+    sc_trace(wf, param_1, "param_1");
+    sc_trace(wf, param_2, "param_2");
+    sc_trace(wf, volt, "volt");
+    sc_trace(wf, current, "current");
+
     for (int n=0; n < 5; n++){
 
         V_TB = InputVoltage(t)/22;
@@ -449,15 +465,20 @@ void  Device::tb(){
         adc_v = to_fixed_16(V_TB);
         adc_i = to_fixed_16(I_TB);
 
-        cout << endl;
-        cout << "**************" << endl;
-        cout << "Enter Function" << endl;
-        cout << "**************" << endl;
-        cout << endl;
         calc_t.notify();
+        cout << endl << "Estimador " << "@" << sc_time_stamp()<< endl;
+
         wait(done_IP);
+        wait(1,SC_NS);
 
         //-------------------------------
         t = t + step;
     }
+    
+    cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
+    
+    //Close files
+    sc_close_vcd_trace_file(wf);
+    file_Signals.close();
+    file_Params.close(); 
 }
