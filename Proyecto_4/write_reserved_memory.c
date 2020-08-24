@@ -8,7 +8,6 @@
 
 #include <sys/mman.h>
 #include <unistd.h>
-#include <fstream>
 
 #define RESERVED_MEMORY_OFFSET  0x1ff00000  /* Offset */
 
@@ -149,11 +148,11 @@ int main() {
     }
     memcpy(reserved_memory_2, &buffer, 4);
 
+    FILE *fp;
     int p1;
     int p2;
 
-    std::ofstream file_Signals;
-    file_Signals.open ("SIGNALS.CSV");
+    fp=fopen("SIGNALS.CSV","w+");
 
     for (int t=0; t<20; t=t+20){
         usleep(20);
@@ -162,13 +161,11 @@ int main() {
 
         reserved_memory_2 = reserved_memory_1 + 25;
         memcpy(&p2, reserved_memory_2, 4);
+        printf("p1: %f", p1/pow(2,21));
+        printf("p2: %f", p2/pow(2,21));
 
-        file_Signals << p1 << "," << p2 << endl;
-
-        printf("\n\n P1: %d \n", p1/pow(2,21));
-        printf("\n\n P2: %d \n", p2/pow(2,21));
+        fprintf(fp,"%f,%f\n",p1/pow(2,21),p2/pow(2,21));
     }
-
-    file_Signals.close();
+    fclose(fp);
     return 0;
 }

@@ -443,11 +443,11 @@ void  Device::estimador_main(){
 
     param_1 = to_fixed_32(p1);
     cout << endl << "Estimador p1: "     << p1 << endl;
-    std::memcpy(mem + p1_Addr, param_1, 4);
+    std::memcpy(mem + p1_Addr, &param_1, 4);
 
     param_2 = to_fixed_32(p2);
     cout << "Estimador p2: "     << p2 << endl;
-    std::memcpy(mem + p2_Addr, param_1, 4);
+    std::memcpy(mem + p2_Addr, &param_2, 4);
 
     volt = to_fixed_32(V);
     cout << "Estimador V : "     << V << endl;
