@@ -57,25 +57,6 @@ using namespace std;
 //*************************************************************************
 //*************************************************************************/
 
-//Variables de puerto Target
-sc_event_queue  do_target_t;
-
-tlm::tlm_generic_payload* trans_pending;
-tlm::tlm_phase phase_pending;
-sc_time delay_pending;
-
-sc_event target_done_t;
-int data_aux_Target;
-unsigned char *data_Target;
-sc_uint<32> address_Target;
-
-//Variables de puerto Iniciador
-sc_event_queue do_initiator_t;
-sc_event initiator_done_t, initiator_done_Resp_t;
-int data_Initiator;
-long int address_Initiator;
-bool comando_Initiator;
-
 //Variables internas
 float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
@@ -138,13 +119,14 @@ Device::Device(sc_core::sc_module_name name,
     /* allocate storage memory */
     mem = new unsigned char[size];
 
-    SC_METHOD(tb);
-    sensitive << tb_do_event;
-    dont_initialize();
-
     SC_METHOD(estimador_main);
     sensitive << tb_do_event;
     dont_initialize();
+
+    //SC_METHOD(tb);
+    SC_THREAD(tb);
+    //sensitive << tb_do_event;
+    //dont_initialize();
 
     SC_METHOD(execute_transaction_process);
     sensitive << target_done_event;
@@ -454,6 +436,9 @@ void  Device::estimador_main(){
 
 //Funcion TB
 void  Device::tb(){
-    cout << "*******" << endl;
-    cout <<  "Start"  << endl;
+    while(true){
+        wait(tb_do_event);
+        cout << "*******" << endl;
+        cout <<  "Start"  << endl;
+    }
 }
