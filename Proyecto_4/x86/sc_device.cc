@@ -58,7 +58,7 @@ using namespace std;
 //*************************************************************************/
 
 //Variables internas
-int I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
+float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
 sc_uint<16> adc_v;   // vector data from XADC
 sc_uint<16> adc_i;   // vector data from XADC
@@ -314,35 +314,35 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         std::memcpy(&Aux_1, Aux_addr_1, 4);
 
         std::memcpy(&Aux_2,mem + I_scale_factor_Addr, 4);
-        I_scale_factor_e = Aux_2;
+        I_scale_factor_e = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + V_scale_factor_Addr, 4);
-        V_scale_factor_e = Aux_2;
+        V_scale_factor_e = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Ig_value_Addr, 4);
-        Ig_e             = Aux_2;
+        Ig_e             = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Gamma11_Addr, 4);
-        GAMMA11_e        = Aux_2;
+        GAMMA11_e        = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Gamma12_Addr, 4);
-        GAMMA12_e        = Aux_2;
+        GAMMA12_e        = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Gamma21_Addr, 4);
-        GAMMA21_e        = Aux_2;
+        GAMMA21_e        = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Gamma22_Addr, 4);
-        GAMMA22_e        = Aux_2;
+        GAMMA22_e        = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Init_alpha_Addr, 4);
-        INIT_ALPHA_e     = Aux_2;
+        INIT_ALPHA_e     = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + Init_beta_Addr, 4);
-        INIT_BETA_e      = Aux_2;
+        INIT_BETA_e      = Aux_2/pow(2,21);
 
         std::memcpy(&Aux_2,mem + T_sampling_Addr, 4);
-        T_SAMPLING_e     = Aux_2;
-        
+        T_SAMPLING_e     = Aux_2/pow(2,21);
+
         std::memcpy(&Aux_2,mem + Start_Addr, 4);
         start            = Aux_2;
 
@@ -410,16 +410,16 @@ void  Device::estimador_main(){
         cout << "       ***************" << endl;
         cout << "*******************************"      << endl;
         cout << "       === SUMMERY ==="               << endl;
-        cout << "I_scale_factor: " << I_scale_factor_e << endl;
-        cout << "V_scale_factor: " << V_scale_factor_e << endl;
-        cout << "Ig            : " << Ig_e             << endl;
-        cout << "GAMMA11       : " << GAMMA11_e        << endl;
-        cout << "GAMMA12       : " << GAMMA12_e        << endl;
-        cout << "GAMMA21       : " << GAMMA21_e        << endl;
-        cout << "GAMMA22       : " << GAMMA22_e        << endl;
-        cout << "INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
-        cout << "INIT_BETA     : " << INIT_BETA_e      << endl;
-        cout << "T_SAMPLING    : " << T_SAMPLING_e     << endl;
+        cout << "I_scale_factor: " << dec << I_scale_factor_e << endl;
+        cout << "V_scale_factor: " << dec << V_scale_factor_e << endl;
+        cout << "Ig            : " << dec << Ig_e             << endl;
+        cout << "GAMMA11       : " << dec << GAMMA11_e        << endl;
+        cout << "GAMMA12       : " << dec << GAMMA12_e        << endl;
+        cout << "GAMMA21       : " << dec << GAMMA21_e        << endl;
+        cout << "GAMMA22       : " << dec << GAMMA22_e        << endl;
+        cout << "INIT_ALPHA    : " << dec << INIT_ALPHA_e     << endl;
+        cout << "INIT_BETA     : " << dec << INIT_BETA_e      << endl;
+        cout << "T_SAMPLING    : " << dec << T_SAMPLING_e     << endl;
         cout << "*******************************"      << endl << endl;
 
         init_cond_1 = INIT_ALPHA_e;
@@ -462,19 +462,20 @@ void  Device::tb(){
     wait(tb_do_event);
 
     // Open VCD file
-    sc_trace_file *wf = sc_create_vcd_trace_file("estimador");
-    wf->set_time_unit(1, SC_NS);
+    //sc_trace_file *wf = sc_create_vcd_trace_file("/estimador");
+    //wf->set_time_unit(10, SC_NS);
 
     // Dump the desired signals
-    sc_trace(wf, adc_v, "adc_v");
-    sc_trace(wf, adc_i, "adc_i");
-    sc_trace(wf, start, "start");
-    sc_trace(wf, param_1, "param_1");
-    sc_trace(wf, param_2, "param_2");
-    sc_trace(wf, volt, "volt");
-    sc_trace(wf, current, "current");
+    //sc_trace(wf, adc_v, "adc_v");
+    //sc_trace(wf, adc_i, "adc_i");
+    //sc_trace(wf, start, "start");
+    //sc_trace(wf, param_1, "param_1");
+    //sc_trace(wf, param_2, "param_2");
+    //sc_trace(wf, volt, "volt");
+    //sc_trace(wf, current, "current");
+    //*/
 
-    for (int n=0; n < 5; n++){
+    for (int n=0; n < 1; n++){
 
         V_TB = InputVoltage(t)/22;
         I_TB = InputCurrent(t)/5;
@@ -495,5 +496,5 @@ void  Device::tb(){
     cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
 
     //Close files
-    sc_close_vcd_trace_file(wf);
+    //sc_close_vcd_trace_file(wf);
 }

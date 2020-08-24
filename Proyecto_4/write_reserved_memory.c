@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #define RESERVED_MEMORY_OFFSET  0x1ff00000  /* Offset */
 
@@ -31,7 +32,7 @@ int main() {
     printf("data: %x\n", buffer_2);
 
     //============================================
-    buffer_2 = 1;
+    buffer_2 = to_fixed_32(5);
     reserved_memory_2 = reserved_memory_1 + 8; //Direccion 0x1ff00020
 
     if (reserved_memory_2 == MAP_FAILED) {
@@ -42,7 +43,7 @@ int main() {
     memcpy(reserved_memory_2, &buffer_2, 4);
 
     //============================================
-    buffer_2 = 2;
+    buffer_2 = to_fixed_32(22);
     reserved_memory_2 = reserved_memory_1 + 9; //Direccion 0x1ff00024
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -52,7 +53,7 @@ int main() {
     memcpy(reserved_memory_2, &buffer_2, 4);
 
     //============================================
-    buffer_2 = 3;
+    buffer_2 = to_fixed_32(3.99);
     reserved_memory_2 = reserved_memory_1 + 10; //Direccion 0x1ff00028
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -63,7 +64,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 4;
+    buffer_2 = to_fixed_32(0.1);
     reserved_memory_2 = reserved_memory_1 + 11; //Direccion 0x1ff0002c
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -74,7 +75,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 5;
+    buffer_2 = to_fixed_32(0);
     reserved_memory_2 = reserved_memory_1 + 12; //Direccion 0x1ff00030
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -84,7 +85,7 @@ int main() {
     memcpy(reserved_memory_2, &buffer_2, 4);
 
     //============================================
-    buffer_2 = 6;
+    buffer_2 = to_fixed_32(0);
     reserved_memory_2 = reserved_memory_1 + 14; //Direccion 0x1ff00038
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -95,7 +96,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 7;
+    buffer_2 = to_fixed_32(100);
     reserved_memory_2 = reserved_memory_1 + 16; //Direccion 0x1ff00040
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -106,7 +107,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 8;
+    buffer_2 = to_fixed_32(0.55);
     reserved_memory_2 = reserved_memory_1 + 18; //Direccion 0x1ff00048
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -117,7 +118,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 9;
+    buffer_2 = to_fixed_32(-13);
     reserved_memory_2 = reserved_memory_1 + 20; //Direccion 0x1ff00050
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -128,7 +129,7 @@ int main() {
 
 
     //============================================
-    buffer_2 = 10;
+    buffer_2 = to_fixed_32(1e-6);
     reserved_memory_2 = reserved_memory_1 + 22; //Direccion 0x1ff00058
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -138,7 +139,7 @@ int main() {
     memcpy(reserved_memory_2, &buffer_2, 4);
 
     //============================================
-    buffer_2 = 11;
+    buffer_2 = 1;
     reserved_memory_2 = reserved_memory_1 + 24; //Direccion 0x1ff00060
     if (reserved_memory_2 == MAP_FAILED) {
         printf("Failed to creating mapping_2.\n");
@@ -154,7 +155,7 @@ int main() {
         return -1;
     }
     memcpy(reserved_memory_1, &buffer_1, 4);
-
+    usleep(20);
     memcpy(&buffer_1, reserved_memory_1 + 22, 4);
     printf("\n\n buffer_1: %d \n", buffer_1);
     return 0;
