@@ -19,7 +19,7 @@ int main() {
     /* Returns a pointer to the 4GB point in /dev/mem - the start of my reserved memory. Only mapping 4096 bytes. */
     reserved_memory_1 = (int *) mmap(0, 4, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, RESERVED_MEMORY_OFFSET);
 
-    reserved_memory_2 = reserved_memory_1 + 1; //Direccion 0x1ff00004
+    reserved_memory_2 = reserved_memory_1 + 0x23D00020/4; //Direccion 0x1ff00004
 
     printf("data: %x\n", buffer_1);
     printf("data: %x\n", buffer_2);
