@@ -288,8 +288,10 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     }
 
     unsigned char *mem_array_ptr = mem + adr;
-    unsigned char *Aux_addr      = mem + 0x1ff00000;
-    int Aux;
+    unsigned char *Aux_addr_1    = mem + 0x1ff00000;
+    unsigned char *Aux_addr_2    = mem + 0x1ff00004;
+    int Aux_1;
+    int Aux_2;
 
     /* Load / Store the access: */
     //cout << "Comando Execute_transaction: " << cmd << endl;
@@ -307,13 +309,16 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
         cout << "WRITE COMAND" << endl;
         cout << "addr: " << adr << endl;
+        cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
-        std::memcpy(&Aux, Aux_addr, 4);
+        std::memcpy(&Aux_1, Aux_addr_1, 4);
+        std::memcpy(&Aux_2, Aux_addr_2, 4);
 
-        cout << "data: " << Aux << endl;
+        cout << "data1: " << Aux_1 << endl;
+        cout << "data2: " << Aux_2 << endl;
 
-        if (Aux == 0xA){
+        if (Aux_1 == 0xA){
             start = 1;
 
             I_scale_factor_e = I_scale_factor;
@@ -396,7 +401,7 @@ void  Device::estimador_main(){
         cout << "Estimador INIT_BETA     : " << INIT_BETA_e      << endl;
         cout << "Estimador T_SAMPLING    : " << T_SAMPLING_e     << endl;
         cout << "Estimador *******************************"      << endl << endl;
-        
+
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
         start = 0;
