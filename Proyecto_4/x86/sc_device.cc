@@ -395,7 +395,7 @@ void  Device::estimador_main(){
         cout << "Estimador INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
         cout << "Estimador INIT_BETA     : " << INIT_BETA_e      << endl;
         cout << "Estimador T_SAMPLING    : " << T_SAMPLING_e     << endl;
-        cout << "Estimador *******************************"      << endl;
+        cout << "Estimador *******************************"      << endl << endl;
         
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
@@ -414,20 +414,22 @@ void  Device::estimador_main(){
     init_cond_2=p2;
 
     param_1 = to_fixed_32(p1);
-    cout << "Estimador p1: "     << p1;
-    cout << "Estimador p1 hex: " << hex << param_1 << endl;
+    cout << endl << "Estimador p1: "     << p1 << endl;
+    //cout << "Estimador p1 hex: " << hex << param_1 << endl;
 
     param_2 = to_fixed_32(p2);
-    cout << "Estimador p2: "     << p2;
-    cout << "Estimador p2 hex: " << hex << param_2 << endl;
+    cout << "Estimador p2: "     << p2 << endl;
+    //cout << "Estimador p2 hex: " << hex << param_2 << endl;
 
     volt = to_fixed_32(V);
-    cout << "Estimador V : "     << V;
-    cout << "Estimador V  hex: " << hex << volt << endl;
+    cout << "Estimador V : "     << V << endl;
+    //cout << "Estimador V  hex: " << hex << volt << endl;
 
     current = to_fixed_32(I);
-    cout << "Estimador I : "     << I;
-    cout << "Estimador I  hex: " << hex << current << endl << endl;
+    cout << "Estimador I : "     << I << endl << endl;
+    //cout << "Estimador I  hex: " << hex << current << endl << endl;
+
+    done_IP.notify();
 }
 
 //Funcion TB
@@ -448,7 +450,8 @@ void  Device::tb(){
         cout << "**************" << endl;
         cout << endl;
         calc_t.notify();
-        
+        wait(done_IP);
+
         //-------------------------------
         t = t + step;
     }
