@@ -155,7 +155,7 @@ int main() {
     int i;
     int aux = 1;
 
-    //fp=fopen("SIGNALS.CSV","w+");
+    fp=fopen("SIGNALS.CSV","w+");
 
     usleep(20);
     for (int t=0; t<3000000; t=t+20){
@@ -173,7 +173,6 @@ int main() {
         reserved_memory_2 = reserved_memory_1 + 7;
         memcpy(&i, reserved_memory_2, 4);
 
-        reserved_memory_2 = reserved_memory_1 + 7;
         memcpy(reserved_memory_1, &aux, 4);
 
         printf("Iteracion #: %d \n", t);
@@ -182,8 +181,8 @@ int main() {
         printf("V: %f \t", v/pow(2,21));
         printf("I: %f \n", i/pow(2,21));
 
-        //fprintf(fp,"%f,%f,%f,%f\n",p1/pow(2,21),p2/pow(2,21),v/pow(2,21),i/pow(2,21));
+        fprintf(fp,"%f,%f,%f,%f\n",p1/pow(2,21),p2/pow(2,21),v/pow(2,21),i/pow(2,21));
     }
-    //fclose(fp);
+    fclose(fp);
     return 0;
 }
