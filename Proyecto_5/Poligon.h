@@ -11,8 +11,8 @@ using namespace std;
 
 int matriz[YSIZE][XSIZE];
 
-void Scan_Line(int);
+void Scan_Line(void);
 
-int InOut_Test(int, int, int);
+int InOut_Test(int, int);
 
 #endif
