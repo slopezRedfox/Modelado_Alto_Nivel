@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #define YSIZE 256
 #define XSIZE 256
@@ -7,8 +8,8 @@ using namespace std;
 
 void Scan_Line(int matriz[YSIZE][XSIZE]){
     int ymax = 0, ymin = 0;
-    int* p;
-    int count;
+    //int* p;
+    //int count;
     bool flag;
 
     // Loop para encontrar Ymax y Ymin
@@ -32,6 +33,7 @@ void Scan_Line(int matriz[YSIZE][XSIZE]){
         }
     }
 
+    /*
     // Solo es necesario trabajar desde Ymax hasta Ymin
     for(int y = ymax; y <= ymin; y++){
         count = 0;
@@ -52,14 +54,34 @@ void Scan_Line(int matriz[YSIZE][XSIZE]){
                 // Se rellena por lo tanto desde el borde anterior hasta el borde
                 // actual, que corresponde el interior del poligono
                 for(int x = p[count-1]; x <= p[count]; x++){
-                    put(matriz[y][x]);
+                    //put(matriz[y][x]);
                 }
             }
         }
     }
+    */
+
+   // Funcion para rellenar el poligono desde ymax hasta ymin
+   for(int y = ymax; y <= ymin; y++){
+       flag = false;
+       for(int x = 0; x < XSIZE-1; x++){
+           if(!flag && matriz[y][x]){
+               flag = true;
+           }
+           else if(flag&&matriz[y][x]&&!matriz[y][x+1]){
+               flag = false;
+           }
+           if(flag){
+               matriz[y][x] = 1;
+           }
+       }
+   }
+
+
+
 }
 
-void InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
+int InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
     bool flag = false;
     int count = 0;
     // Revisa los pixeles en la fila y
@@ -82,24 +104,12 @@ void InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
     // si es impar esta dentro
     switch(count%2){
         case 0:
-            cout << "El punto esta afuera del poligono" << endl;
+            return 0;
             break;
         case 1:
-            cout << "El punto esta dentro del poligono" << endl;
+            return 1;
             break;
         default:
             cout << "Error al realizar el test!" << endl;
     }
-}
-
-int main(){
-    /****************************************************************************
-     * 
-     * 
-     * Falta colocar codigo de imagenes
-     * 
-     * 
-     * **************************************************************************/
-
-    return 0;
-}
+};
