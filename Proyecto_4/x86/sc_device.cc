@@ -302,8 +302,6 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     int Aux_1;
     int Aux_2;
 
-    /* Load / Store the access: */
-    //cout << "Comando Execute_transaction: " << cmd << endl;
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
 
@@ -351,6 +349,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         std::memcpy(&Aux_2,mem + T_sampling_Addr, 4);
         T_SAMPLING_e     = Aux_2/pow(2,21);
 
+        //Comando start
         std::memcpy(&Aux_2,mem + Start_Addr, 4);
         start            = Aux_2;
 
@@ -358,10 +357,6 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
             start = 1;
             tb_do_event.notify();
         }
-        //if (Aux_1 == 0x1){
-        //    tb_do_event.notify();
-        //    Aux_1 = 0;
-        //}
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
