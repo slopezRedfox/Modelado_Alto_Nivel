@@ -3,11 +3,12 @@
 
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+#include <iomanip>
+using namespace std;
 
 #define YSIZE 256
 #define XSIZE 256
-
-using namespace std;
 
 int matriz[YSIZE][XSIZE];
 
