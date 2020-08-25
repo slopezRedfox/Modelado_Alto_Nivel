@@ -148,7 +148,7 @@ int main() {
     }
     memcpy(reserved_memory_2, &buffer, 4);
 
-    //FILE *fp;
+    FILE *fp;
     int p1;
     int p2;
     int v;
