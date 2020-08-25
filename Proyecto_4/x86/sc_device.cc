@@ -302,7 +302,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     int Aux_1;
     int Aux_2;
 
-    cout << "Addr: " << adr << " ";
+    cout << "Addr: " << hex << adr << " ";
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
 
