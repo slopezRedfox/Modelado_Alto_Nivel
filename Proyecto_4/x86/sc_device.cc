@@ -482,7 +482,6 @@ void  Device::tb(){
         adc_i = to_fixed_16(I_TB);
 
         calc_t.notify();
-        cout << endl << "Iteracion #: " << n << endl;
         cout << endl << "Estimador " << "@" << sc_time_stamp()<< endl;
 
         wait(done_IP);
