@@ -436,6 +436,7 @@ void  Device::estimador_main(){
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
         start = 0;
+        std::memcpy(mem + Start_Addr, &start, 4);
     }
 
     I = adc_i / pow(2,16);
