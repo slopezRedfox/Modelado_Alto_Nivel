@@ -63,6 +63,8 @@ int main(){
     outFile << setw(20) << resultado;
     outFile << endl;
 
+    outFile.close();
+
 
     // Apertura del archivo para guardar la imagen
     // rellenada con el algoritmo Scan Line
