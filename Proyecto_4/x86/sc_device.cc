@@ -395,13 +395,13 @@ float InputCurrent(float t){
 uint16_t to_fixed_16(float a){
     a=a*pow(2,16);
     int b = (int)a;
-    return INT2U16(b);
+    return b;
 }
 
 uint32_t to_fixed_32(float a){
     a=a*pow(2,21);
     int b = (int)a;
-    return INT2U32(b);
+    return b;
 }
 
 //Funcion estimador_main
