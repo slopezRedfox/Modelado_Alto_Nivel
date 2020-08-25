@@ -94,10 +94,10 @@ float b = log(Psi);                 			//Is current logarithm
 float V_cte = 16.69;
 
 float t = 0;
-float segundos=3;
-float sample_rate=1e6;
-float step=1/sample_rate;
-float n_samples=segundos*sample_rate;
+float segundos=3;                               //Tiempo en que teoricamente llega a la estabilidad
+float sample_rate=1e6;                          //Frecuencia de muestreo
+float step=1/sample_rate;                       //1us = 1000ns
+float n_samples=segundos*sample_rate;           
 float V_TB, I_TB;
 
 //*************************************************************************
@@ -302,8 +302,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     int Aux_1;
     int Aux_2;
 
-    /* Load / Store the access: */
-    //cout << "Comando Execute_transaction: " << cmd << endl;
+    cout << "Addr: " << adr << " ";
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
 
@@ -351,17 +350,13 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         std::memcpy(&Aux_2,mem + T_sampling_Addr, 4);
         T_SAMPLING_e     = Aux_2/pow(2,21);
 
+        //Comando start
         std::memcpy(&Aux_2,mem + Start_Addr, 4);
         start            = Aux_2;
 
         if (start == 0x1){
-            start = 1;
             tb_do_event.notify();
         }
-        //if (Aux_1 == 0x1){
-        //    tb_do_event.notify();
-        //    Aux_1 = 0;
-        //}
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -487,7 +482,7 @@ void  Device::tb(){
             wait(done_IP);
             cout << "Estimador " << "@" << sc_time_stamp()<< endl << endl;
 
-            wait(10,SC_NS);
+            wait(1000,SC_NS);
 
             //-------------------------------
             t = t + step;
