@@ -63,14 +63,14 @@ using namespace std;
 //Variables internas
 float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
-sc_uint<16> adc_v;   // vector data from XADC
-sc_uint<16> adc_i;   // vector data from XADC
+sc_uint<16> adc_v;  // vector data from XADC
+sc_uint<16> adc_i;  // vector data from XADC
 
-int   start;         // Active high, ready signal from estimador
-sc_uint<32> param_1; // 32 bit vector output of the estimador
-sc_uint<32> param_2; // 32 bit vector output of the estimador
-sc_uint<32> volt;
-sc_uint<32> current;
+int start;          // Active high, ready signal from estimador
+int param_1;        // 32 bit vector output of the estimador
+int param_2;        // 32 bit vector output of the estimador
+int volt;
+int current;
 
 float init_cond_1, init_cond_2;
 float p1, p2, p1_aux, p2_aux, y_log, I, V;
@@ -442,7 +442,8 @@ void  Device::estimador_main(){
     init_cond_2=p2;
 
     param_1 = to_fixed_32(p1);
-    cout << endl << "Estimador p1: "     << p1 << endl;
+    cout << endl << "Estimador p1: " << p1 << endl;
+    cout << endl << "Estimador p1: " << param_1 << endl;
     std::memcpy(mem + p1_Addr, &param_1, 4);
 
     param_2 = to_fixed_32(p2);
