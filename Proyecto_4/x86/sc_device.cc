@@ -475,7 +475,7 @@ void  Device::tb(){
     while(true){
         wait(tb_do_event);
 
-        for (int n = 0; n < 1000; n++){
+        for (int n = 0; n < 500; n++){
             V_TB = InputVoltage(t)/22;
             I_TB = InputCurrent(t)/5;
 

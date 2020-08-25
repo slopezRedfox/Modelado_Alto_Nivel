@@ -158,7 +158,7 @@ int main() {
     fp=fopen("SIGNALS.CSV","w+");
 
     usleep(20);
-    for (int t=0; t<3000000; t=t+200){
+    for (int t=0; t<6000; t++){
 
         reserved_memory_2 = reserved_memory_1 + 4;
         memcpy(&p1, reserved_memory_2, 4);
