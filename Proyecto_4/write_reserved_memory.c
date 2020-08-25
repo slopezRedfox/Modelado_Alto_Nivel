@@ -162,7 +162,6 @@ int main() {
         reserved_memory_2 = reserved_memory_1 + 26;
         memcpy(&p2, reserved_memory_2, 4);
         printf("p1: %f\n", p1/pow(2,21));
-        printf("p1: %d\n", p1);
         printf("p2: %f\n", p2/pow(2,21));
 
         fprintf(fp,"%f,%f\n",p1/pow(2,21),p2/pow(2,21));
