@@ -2,45 +2,51 @@
 #Nomachine: https://www.youtube.com/watch?v=eolNziYLe9Y&t=1191s
 ##Ejecutar los siguientes comandos en un terminal
 
-> git clone https://gem5.googlesource.com/public/gem5
-> cd gem5/
-> git reset --hard 006eb36634a35f6b6d44ee63254f31ba96ac5267
-> cd ..
-> wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1EJmekoRb6ZXVQp4biheMliDFjaYe6nP6' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1EJmekoRb6ZXVQp4biheMliDFjaYe6nP6" -O x86_systemc_files.tar.gz && rm -rf /tmp/cookies.txt
-> tar -xvf x86_systemc_files.tar.gz
-> cp x86_systemc_files/patch.diff gem5/
-> cd gem5/
-> git apply patch.diff
-> cd ..
-> cp x86_systemc_files/sc_* gem5/util/tlm/examples/slave_port/
-> sudo apt-get update
-> sudo apt-get upgrade
-> sudo apt-get install scons g++ m4 zlib1g-dev protobuf-compiler libpng-dev build-essential
-> sudo apt-get install -y python-dev
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install ubuntu-desktop
+sudo adduser demo
+sudo usermod -aG sudo,adm demo 
+
+cd Desktop/
+git clone https://gem5.googlesource.com/public/gem5
+cd gem5/
+git reset --hard 006eb36634a35f6b6d44ee63254f31ba96ac5267
+cd ..
+wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1EJmekoRb6ZXVQp4biheMliDFjaYe6nP6' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1EJmekoRb6ZXVQp4biheMliDFjaYe6nP6" -O x86_systemc_files.tar.gz && rm -rf /tmp/cookies.txt
+tar -xvf x86_systemc_files.tar.gz
+cp x86_systemc_files/patch.diff gem5/
+cd gem5/
+git apply patch.diff
+cd ..
+cp x86_systemc_files/sc_* gem5/util/tlm/examples/slave_port/
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install scons g++ m4 zlib1g-dev protobuf-compiler libpng-dev build-essential
+sudo apt-get install -y python-dev
 
 ## Posibles otras bibliotecas que pueden ayudar
 ##sudo apt install libgoogle-perftools-dev
 ##sudo apt-get install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
 
-> cd gem5/
-> scons build/X86/gem5.opt
-> scons --with-cxx-config --without-python --without-tcmalloc build/X86/libgem5_opt.so
-
-> export M5_PATH=~/Desktop/x86_systemc_files
-> cd ..
-> cd x86_systemc_files/
-> gcc write_reserved_memory.c -o write_reserved_memory.o
-> cd disks/
-> sudo mount -o loop,offset=32256 linux-x86.img /mnt/
-> cd ..
-> cp write_reserved_memory.o ~/Desktop/gem5/
-> sudo umount /mnt/
-> cd ../gem5/util/tlm
-> scons -j16
-> ../../build/X86/gem5.opt ../../configs/example/fs.py --tlm-memory=transactor --cpu-type=AtomicSimpleCPU --num-cpu=1 --mem-type=SimpleMemory --mem-size=512MB --disk-image=$M5_PATH/disks/linux-x86.img
+cd gem5/
+scons build/X86/gem5.opt -j16
+scons --with-cxx-config --without-python --without-tcmalloc build/X86/libgem5_opt.so -j16
+export M5_PATH=~/Desktop/x86_systemc_files
+cd ..
+cd x86_systemc_files/
+gcc write_reserved_memory.c -o write_reserved_memory.o
+cd disks/
+sudo mount -o loop,offset=32256 linux-x86.img /mnt/
+cd ..
+cp write_reserved_memory.o ~/Desktop/gem5/
+sudo umount /mnt/
+cd ../gem5/util/tlm
+scons -j16
+../../build/X86/gem5.opt ../../configs/example/fs.py --tlm-memory=transactor --cpu-type=AtomicSimpleCPU --num-cpu=1 --mem-type=SimpleMemory --mem-size=512MB --disk-image=$M5_PATH/disks/linux-x86.img
 ####NOTA: Va a tirar un error pero no importa, se sigue adelante y ya
 
-> ./build/examples/slave_port/gem5.sc m5out/config.ini -o 0
+./build/examples/slave_port/gem5.sc m5out/config.ini -o 0
 
 ####Luego en otra consola ejecutar:
 telnet localhost 3456 
@@ -70,7 +76,6 @@ cd ../gem5/util/tlm
 scons -j16
 ../../build/X86/gem5.opt ../../configs/example/fs.py --tlm-memory=transactor --cpu-type=AtomicSimpleCPU --num-cpu=1 --mem-type=SimpleMemory --mem-size=512MB --disk-image=$M5_PATH/disks/linux-x86.img
 ./build/examples/slave_port/gem5.sc m5out/config.ini -o 0
-
 
 
 telnet localhost 3456 

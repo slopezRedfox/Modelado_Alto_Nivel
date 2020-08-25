@@ -21,29 +21,19 @@ using namespace std;
 
 #define calc_delay 0
 //Constans from memory
-//Direccion de registros de solo lectura del estimador
-//#define Param_approx_1_Addr 0x1ff00010
-//#define Param_approx_2_Addr 0x1ff00014
-//#define Voltage_out         0x1ff00018
-//#define Current_out         0x1ff0001c
 
 //Direcciones de registro de solo escritura del estimador
-#define I_scale_factor_Addr 0x1ff00020
-#define V_scale_factor_Addr 0x1ff00024
-#define Ig_value_Addr       0x1ff00028
-#define Gamma11_Addr        0x1ff0002c
-#define Gamma12_Addr        0x1ff00030
-#define Gamma21_Addr        0x1ff00038
-#define Gamma22_Addr        0x1ff00040
-#define Init_alpha_Addr     0x1ff00048
-#define Init_beta_Addr      0x1ff00050
-#define T_sampling_Addr     0x1ff00058
-#define Start_Addr          0x1ff00060
-#define p1_Addr             0x1ff00010
-#define p2_Addr             0x1ff00014
-#define Voltage_out         0x1ff00018
-#define Current_out         0x1ff0001c
-
+#define I_scale_factor_Addr 0x43c00020
+#define V_scale_factor_Addr 0x43c00024
+#define Ig_value_Addr       0x43c00028
+#define Gamma11_Addr        0x43c0002c
+#define Gamma12_Addr        0x43c00030
+#define Gamma21_Addr        0x43c00038
+#define Gamma22_Addr        0x43c00040
+#define Init_alpha_Addr     0x43c00048
+#define Init_beta_Addr      0x43c00050
+#define T_sampling_Addr     0x43c00058
+#define Start_Addr          0x43c00060
 
 #define I_scale_factor    5
 #define V_scale_factor    22
@@ -70,14 +60,14 @@ using namespace std;
 //Variables internas
 float I_scale_factor_e, V_scale_factor_e, Ig_e, GAMMA11_e, GAMMA12_e, GAMMA21_e, GAMMA22_e, INIT_ALPHA_e, INIT_BETA_e, T_SAMPLING_e;
 
-sc_uint<16> adc_v;  // vector data from XADC
-sc_uint<16> adc_i;  // vector data from XADC
+sc_uint<16> adc_v;   // vector data from XADC
+sc_uint<16> adc_i;   // vector data from XADC
 
-int start;          // Active high, ready signal from estimador
-int param_1;        // 32 bit vector output of the estimador
-int param_2;        // 32 bit vector output of the estimador
-int volt;
-int current;
+bool  start;         // Active high, ready signal from estimador
+sc_uint<32> param_1; // 32 bit vector output of the estimador
+sc_uint<32> param_2; // 32 bit vector output of the estimador
+sc_uint<32> volt;
+sc_uint<32> current;
 
 float init_cond_1, init_cond_2;
 float p1, p2, p1_aux, p2_aux, y_log, I, V;
@@ -299,6 +289,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
 
     unsigned char *mem_array_ptr = mem + adr;
     unsigned char *Aux_addr_1    = mem + 0x1ff00000;
+    unsigned char *Aux_addr_2    = mem + 0x1ff00004;
     int Aux_1;
     int Aux_2;
 
@@ -307,61 +298,42 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
 
-        if(mem_array_ptr == mem + Current_out){
-            tb_do_event.notify();
+        if (debug) {
+            SC_REPORT_INFO("target", "tlm::TLM_READ_COMMAND");
         }
-
+        //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
         std::memcpy(ptr, mem_array_ptr, len);
     }
 
     else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
 
         cout << "WRITE COMAND" << endl;
+        cout << "addr: " << adr << endl;
+        cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
         std::memcpy(&Aux_1, Aux_addr_1, 4);
+        std::memcpy(&Aux_2, Aux_addr_2, 4);
 
-        std::memcpy(&Aux_2,mem + I_scale_factor_Addr, 4);
-        I_scale_factor_e = Aux_2/pow(2,21);
+        cout << "data1: " << Aux_1 << endl;
+        cout << "data2: " << Aux_2 << endl;
 
-        std::memcpy(&Aux_2,mem + V_scale_factor_Addr, 4);
-        V_scale_factor_e = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Ig_value_Addr, 4);
-        Ig_e             = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Gamma11_Addr, 4);
-        GAMMA11_e        = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Gamma12_Addr, 4);
-        GAMMA12_e        = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Gamma21_Addr, 4);
-        GAMMA21_e        = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Gamma22_Addr, 4);
-        GAMMA22_e        = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Init_alpha_Addr, 4);
-        INIT_ALPHA_e     = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Init_beta_Addr, 4);
-        INIT_BETA_e      = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + T_sampling_Addr, 4);
-        T_SAMPLING_e     = Aux_2/pow(2,21);
-
-        std::memcpy(&Aux_2,mem + Start_Addr, 4);
-        start            = Aux_2;
-
-        if (start == 0x1){
+        if (Aux_1 == 0xA){
             start = 1;
+
+            I_scale_factor_e = I_scale_factor;
+            V_scale_factor_e = V_scale_factor;
+            Ig_e             = Ig;
+            GAMMA11_e        = GAMMA11;
+            GAMMA12_e        = GAMMA12;
+            GAMMA21_e        = GAMMA21;
+            GAMMA22_e        = GAMMA22;
+            INIT_ALPHA_e     = INIT_ALPHA;
+            INIT_BETA_e      = INIT_BETA;
+            T_SAMPLING_e     = T_SAMPLING;
+
             tb_do_event.notify();
         }
-        //if (Aux_1 == 0x1){
-        //    tb_do_event.notify();
-        //    Aux_1 = 0;
-        //}
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -403,13 +375,13 @@ float InputCurrent(float t){
 uint16_t to_fixed_16(float a){
     a=a*pow(2,16);
     int b = (int)a;
-    return b;
+    return INT2U16(b);
 }
 
 uint32_t to_fixed_32(float a){
     a=a*pow(2,21);
     int b = (int)a;
-    return b;
+    return INT2U32(b);
 }
 
 //Funcion estimador_main
@@ -421,22 +393,21 @@ void  Device::estimador_main(){
         cout << "       ***************" << endl;
         cout << "*******************************"      << endl;
         cout << "       === SUMMERY ==="               << endl;
-        cout << "I_scale_factor: " << dec << I_scale_factor_e << endl;
-        cout << "V_scale_factor: " << dec << V_scale_factor_e << endl;
-        cout << "Ig            : " << dec << Ig_e             << endl;
-        cout << "GAMMA11       : " << dec << GAMMA11_e        << endl;
-        cout << "GAMMA12       : " << dec << GAMMA12_e        << endl;
-        cout << "GAMMA21       : " << dec << GAMMA21_e        << endl;
-        cout << "GAMMA22       : " << dec << GAMMA22_e        << endl;
-        cout << "INIT_ALPHA    : " << dec << INIT_ALPHA_e     << endl;
-        cout << "INIT_BETA     : " << dec << INIT_BETA_e      << endl;
-        cout << "T_SAMPLING    : " << dec << T_SAMPLING_e     << endl;
+        cout << "I_scale_factor: " << I_scale_factor_e << endl;
+        cout << "V_scale_factor: " << V_scale_factor_e << endl;
+        cout << "Ig            : " << Ig_e             << endl;
+        cout << "GAMMA11       : " << GAMMA11_e        << endl;
+        cout << "GAMMA12       : " << GAMMA12_e        << endl;
+        cout << "GAMMA21       : " << GAMMA21_e        << endl;
+        cout << "GAMMA22       : " << GAMMA22_e        << endl;
+        cout << "INIT_ALPHA    : " << INIT_ALPHA_e     << endl;
+        cout << "INIT_BETA     : " << INIT_BETA_e      << endl;
+        cout << "T_SAMPLING    : " << T_SAMPLING_e     << endl;
         cout << "*******************************"      << endl << endl;
 
         init_cond_1 = INIT_ALPHA_e;
         init_cond_2 = INIT_BETA_e;
         start = 0;
-        std::memcpy(mem + Start_Addr, &start, 4);
     }
 
     I = adc_i / pow(2,16);
@@ -451,49 +422,61 @@ void  Device::estimador_main(){
     init_cond_2=p2;
 
     param_1 = to_fixed_32(p1);
-    cout << "Estimador p1: " << p1 << "\t";
-    std::memcpy(mem + p1_Addr, &param_1, 4);
+    cout << endl << "Estimador p1: "     << p1 << endl;
+    //cout << "Estimador p1 hex: " << hex << param_1 << endl;
 
     param_2 = to_fixed_32(p2);
-    cout << "p2: "     << p2 << "\t";
-    std::memcpy(mem + p2_Addr, &param_2, 4);
+    cout << "Estimador p2: "     << p2 << endl;
+    //cout << "Estimador p2 hex: " << hex << param_2 << endl;
 
     volt = to_fixed_32(V);
-    cout << "V : "     << V << "\t";
-    std::memcpy(mem + Voltage_out, &volt, 4);
+    cout << "Estimador V : "     << V << endl;
+    //cout << "Estimador V  hex: " << hex << volt << endl;
 
     current = to_fixed_32(I);
-    cout << "I : "     << I << endl;
-    std::memcpy(mem + Current_out, &current, 4);
+    cout << "Estimador I : "     << I << endl << endl;
+    //cout << "Estimador I  hex: " << hex << current << endl << endl;
 
     done_IP.notify();
 }
 
 //Funcion TB
 void  Device::tb(){
+    wait(tb_do_event);
 
-    while(true){
-        wait(tb_do_event);
+    // Open VCD file
+    sc_trace_file *wf = sc_create_vcd_trace_file("estimador");
+    wf->set_time_unit(1, SC_NS);
 
-        for (int n = 0; n < 5; n++){
-            V_TB = InputVoltage(t)/22;
-            I_TB = InputCurrent(t)/5;
+    // Dump the desired signals
+    sc_trace(wf, adc_v, "adc_v");
+    sc_trace(wf, adc_i, "adc_i");
+    sc_trace(wf, start, "start");
+    sc_trace(wf, param_1, "param_1");
+    sc_trace(wf, param_2, "param_2");
+    sc_trace(wf, volt, "volt");
+    sc_trace(wf, current, "current");
 
-            adc_v = to_fixed_16(V_TB);
-            adc_i = to_fixed_16(I_TB);
+    for (int n=0; n < 5; n++){
 
-            calc_t.notify();
+        V_TB = InputVoltage(t)/22;
+        I_TB = InputCurrent(t)/5;
 
-            wait(done_IP);
-            cout << "Estimador " << "@" << sc_time_stamp()<< endl << endl;
+        adc_v = to_fixed_16(V_TB);
+        adc_i = to_fixed_16(I_TB);
 
-            wait(10,SC_NS);
+        calc_t.notify();
+        cout << endl << "Estimador " << "@" << sc_time_stamp()<< endl;
 
-            //-------------------------------
-            t = t + step;
-        }
-   }
+        wait(done_IP);
+        wait(1,SC_NS);
 
-    cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
-
+        //-------------------------------
+        t = t + step;
+    }
+    
+    cout << "@" << sc_time_stam() <<" Terminating simulation\n" << endl;
+    
+    //Close files
+    sc_close_vcd_trace_file(wf);
 }

@@ -19,6 +19,9 @@ struct Device: sc_module
     /** TLM related member variables: */
     tlm::tlm_generic_payload*  transaction_in_progress;
     sc_event                   target_done_event;
+    sc_event                   tb_do_event;
+    sc_event                   calc_t;
+    sc_event                   done_IP;
     bool                       response_in_progress;
     bool                       debug;
     tlm::tlm_generic_payload*  next_response_pending;
@@ -57,8 +60,8 @@ struct Device: sc_module
     /** Method process that runs on target_done_event */
     void execute_transaction_process();
 
-    //void tb();
-    //void estimador_main();
+    void tb();
+    void estimador_main();
 
     /** Helping function that checks if a requested address is with range */
     void check_address(unsigned long long int addr);
