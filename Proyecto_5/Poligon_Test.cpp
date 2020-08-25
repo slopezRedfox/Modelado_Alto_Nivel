@@ -3,7 +3,6 @@
 int main(){
     ifstream inFile;
     ofstream outFile;
-    int matriz2[YSIZE][XSIZE];
     int data, xcount = 0, ycount = 0;
     int retval1 = 0, retval2 = 0;
     int resultado;
@@ -108,9 +107,6 @@ int main(){
 		printf("Test passed !\n");
     }
     */
-
-
-
-
+   
     return (retval1 + retval2);
 }

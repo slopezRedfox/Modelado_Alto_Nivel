@@ -75,6 +75,7 @@ void Scan_Line(void){
 int InOut_Test(int x, int y){
     bool flag = false;
     int count = 0;
+    int resultado = 0;
     // Revisa los pixeles en la fila y
     for(int i = 0; i <= x; i++){
         // Si el flag es false, significa que esta fuera del poligono al
@@ -95,12 +96,13 @@ int InOut_Test(int x, int y){
     // si es impar esta dentro
     switch(count%2){
         case 0:
-            return 0;
+            resultado = 0;
             break;
         case 1:
-            return 1;
+            resultado = 1;
             break;
         default:
             cout << "Error al realizar el test!" << endl;
     }
+    return resultado;
 }
