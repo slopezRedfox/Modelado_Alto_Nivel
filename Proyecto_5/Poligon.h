@@ -9,6 +9,8 @@
 
 using namespace std;
 
+int matriz[YSIZE][XSIZE];
+
 void Scan_Line(int);
 
 int InOut_Test(int, int, int);

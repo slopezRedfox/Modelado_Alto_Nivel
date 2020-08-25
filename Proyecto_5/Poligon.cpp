@@ -1,12 +1,6 @@
-#include <iostream>
-#include <fstream>
+#include "Poligon.h"
 
-#define YSIZE 256
-#define XSIZE 256
-
-using namespace std;
-
-void Scan_Line(int matriz[YSIZE][XSIZE]){
+void Scan_Line(void){
     int ymax = 0, ymin = 0;
     //int* p;
     //int count;
@@ -76,12 +70,9 @@ void Scan_Line(int matriz[YSIZE][XSIZE]){
            }
        }
    }
-
-
-
 }
 
-int InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
+int InOut_Test(int x, int y){
     bool flag = false;
     int count = 0;
     // Revisa los pixeles en la fila y
@@ -112,4 +103,4 @@ int InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
         default:
             cout << "Error al realizar el test!" << endl;
     }
-};
+}
