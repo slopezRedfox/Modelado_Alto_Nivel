@@ -305,18 +305,18 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     /* Load / Store the access: */
     //cout << "Comando Execute_transaction: " << cmd << endl;
     if ( cmd == tlm::TLM_READ_COMMAND ) {
-        //cout << "READ COMAND" << endl;
+        cout << "READ COMAND" << endl;
 
-        if (debug) {
-            SC_REPORT_INFO("target", "tlm::TLM_READ_COMMAND");
+        if(mem_array_ptr == mem + Current_out){
+            tb_do_event.notify();
         }
-        //DO SOMETHING DIFFERENT HERE FOR YOUR PROJECT
+
         std::memcpy(ptr, mem_array_ptr, len);
     }
 
     else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
 
-        //cout << "WRITE COMAND" << endl;
+        cout << "WRITE COMAND" << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
         std::memcpy(&Aux_1, Aux_addr_1, 4);
@@ -358,10 +358,10 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
             start = 1;
             tb_do_event.notify();
         }
-        if (Aux_1 == 0x1){
-            tb_do_event.notify();
-            Aux_1 = 0;
-        }
+        //if (Aux_1 == 0x1){
+        //    tb_do_event.notify();
+        //    Aux_1 = 0;
+        //}
     }
 
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -475,7 +475,7 @@ void  Device::tb(){
     while(true){
         wait(tb_do_event);
 
-        for (int n = 0; n < 500; n++){
+        for (int n = 0; n < 5; n++){
             V_TB = InputVoltage(t)/22;
             I_TB = InputCurrent(t)/5;
 
@@ -483,9 +483,10 @@ void  Device::tb(){
             adc_i = to_fixed_16(I_TB);
 
             calc_t.notify();
-            cout << endl << "Estimador " << "@" << sc_time_stamp()<< endl;
 
             wait(done_IP);
+            cout << "Estimador " << "@" << sc_time_stamp()<< endl << endl;
+
             wait(10,SC_NS);
 
             //-------------------------------
