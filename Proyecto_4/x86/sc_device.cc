@@ -303,7 +303,7 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     int Aux_2;
 
     /* Load / Store the access: */
-    //cout << "Comando Execute_transaction: " << cmd << endl;
+    cout << "Addr: " << adr << " ";
     if ( cmd == tlm::TLM_READ_COMMAND ) {
         cout << "READ COMAND" << endl;
 
@@ -487,7 +487,7 @@ void  Device::tb(){
             wait(done_IP);
             cout << "Estimador " << "@" << sc_time_stamp()<< endl << endl;
 
-            wait(10,SC_NS);
+            wait(1000,SC_NS);
 
             //-------------------------------
             t = t + step;
