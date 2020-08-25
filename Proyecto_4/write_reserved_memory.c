@@ -151,20 +151,31 @@ int main() {
     FILE *fp;
     int p1;
     int p2;
+    int v;
+    int i;
 
     fp=fopen("SIGNALS.CSV","w+");
 
     for (int t=0; t<3000000; t=t+20){
         usleep(20);
-        reserved_memory_2 = reserved_memory_1 + 25;
+        reserved_memory_2 = reserved_memory_1 + 4;
         memcpy(&p1, reserved_memory_2, 4);
 
-        reserved_memory_2 = reserved_memory_1 + 26;
+        reserved_memory_2 = reserved_memory_1 + 5;
         memcpy(&p2, reserved_memory_2, 4);
-        printf("p1: %f\n", p1/pow(2,21));
-        printf("p2: %f\n", p2/pow(2,21));
 
-        fprintf(fp,"%f,%f\n",p1/pow(2,21),p2/pow(2,21));
+        reserved_memory_2 = reserved_memory_1 + 6;
+        memcpy(&v, reserved_memory_2, 4);
+
+        reserved_memory_2 = reserved_memory_1 + 7;
+        memcpy(&i, reserved_memory_2, 4);
+        printf("Iteracion #: %d \n", t);
+        printf("p1: %f \t", p1/pow(2,21));
+        printf("p2: %f\t", p2/pow(2,21));
+        printf("V: %f \t", v/pow(2,21));
+        printf("I: %f \n", i/pow(2,21));
+
+        fprintf(fp,"%f,%f,%f,%f\n",p1/pow(2,21),p2/pow(2,21),v/pow(2,21),i/pow(2,21));
     }
     fclose(fp);
     return 0;

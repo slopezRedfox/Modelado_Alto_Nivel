@@ -21,6 +21,11 @@ using namespace std;
 
 #define calc_delay 0
 //Constans from memory
+//Direccion de registros de solo lectura del estimador
+//#define Param_approx_1_Addr 0x1ff00010
+//#define Param_approx_2_Addr 0x1ff00014
+//#define Voltage_out         0x1ff00018
+//#define Current_out         0x1ff0001c
 
 //Direcciones de registro de solo escritura del estimador
 #define I_scale_factor_Addr 0x1ff00020
@@ -34,8 +39,10 @@ using namespace std;
 #define Init_beta_Addr      0x1ff00050
 #define T_sampling_Addr     0x1ff00058
 #define Start_Addr          0x1ff00060
-#define p1_Addr             0x1ff00064
-#define p2_Addr             0x1ff00068
+#define p1_Addr             0x1ff00010
+#define p2_Addr             0x1ff00014
+#define Voltage_out         0x1ff00018
+#define Current_out         0x1ff0001c
 
 
 #define I_scale_factor    5
@@ -310,8 +317,6 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
     else if ( cmd == tlm::TLM_WRITE_COMMAND ) {
 
         cout << "WRITE COMAND" << endl;
-        cout << "addr: " << adr << endl;
-        //cout << "len : " << len << endl;
 
         std::memcpy(mem_array_ptr, ptr, len);
         std::memcpy(&Aux_1, Aux_addr_1, 4);
@@ -442,18 +447,20 @@ void  Device::estimador_main(){
     init_cond_2=p2;
 
     param_1 = to_fixed_32(p1);
-    cout << endl << "Estimador p1: " << p1 << endl;
+    cout << "Estimador p1: " << p1 << "\t";
     std::memcpy(mem + p1_Addr, &param_1, 4);
 
     param_2 = to_fixed_32(p2);
-    cout << "Estimador p2: "     << p2 << endl;
+    cout << "p2: "     << p2 << "\t";
     std::memcpy(mem + p2_Addr, &param_2, 4);
 
     volt = to_fixed_32(V);
-    cout << "Estimador V : "     << V << endl;
+    cout << "V : "     << V << "\t";
+    std::memcpy(mem + Voltage_out, &volt, 4);
 
     current = to_fixed_32(I);
-    cout << "Estimador I : "     << I << endl << endl;
+    cout << "I : "     << I << endl;
+    std::memcpy(mem + Current_out, &current, 4);
 
     done_IP.notify();
 }
@@ -485,6 +492,7 @@ void  Device::tb(){
         adc_i = to_fixed_16(I_TB);
 
         calc_t.notify();
+        cout << endl << "Iteracion #: " << n << endl;
         cout << endl << "Estimador " << "@" << sc_time_stamp()<< endl;
 
         wait(done_IP);
