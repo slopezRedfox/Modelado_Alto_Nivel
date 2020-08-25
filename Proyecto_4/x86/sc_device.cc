@@ -354,10 +354,13 @@ void Device::execute_transaction(tlm::tlm_generic_payload& trans){
         std::memcpy(&Aux_2,mem + Start_Addr, 4);
         start            = Aux_2;
 
-        cout << "data1: " << Aux_1 << endl;
         if (start == 0x1){
             start = 1;
             tb_do_event.notify();
+        }
+        if (Aux_1 == 0x1){
+            tb_do_event.notify();
+            Aux_1 = 0;
         }
     }
 
@@ -467,23 +470,10 @@ void  Device::estimador_main(){
 
 //Funcion TB
 void  Device::tb(){
-    wait(tb_do_event);
+    
 
-    // Open VCD file
-    //sc_trace_file *wf = sc_create_vcd_trace_file("/estimador");
-    //wf->set_time_unit(10, SC_NS);
-
-    // Dump the desired signals
-    //sc_trace(wf, adc_v, "adc_v");
-    //sc_trace(wf, adc_i, "adc_i");
-    //sc_trace(wf, start, "start");
-    //sc_trace(wf, param_1, "param_1");
-    //sc_trace(wf, param_2, "param_2");
-    //sc_trace(wf, volt, "volt");
-    //sc_trace(wf, current, "current");
-    //*/
-
-    for (int n=0; n < n_samples; n++){
+    while(true){
+        wait(tb_do_event);
 
         V_TB = InputVoltage(t)/22;
         I_TB = InputCurrent(t)/5;
@@ -504,6 +494,4 @@ void  Device::tb(){
 
     cout << "@" << sc_time_stamp() <<" Terminating simulation\n" << endl;
 
-    //Close files
-    //sc_close_vcd_trace_file(wf);
 }
