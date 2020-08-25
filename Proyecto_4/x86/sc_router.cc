@@ -44,8 +44,8 @@ void Router<N_TARGETS>::b_transport( tlm::tlm_generic_payload& trans, sc_time& d
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
-        cout << "Addrss: " << hex << address << endl;
-        printf("Accessing Device Memory Region\n");
+        //cout << "Addrss: " << hex << address << endl;
+        //printf("Accessing Device Memory Region\n");
         }
     // Forward transaction to appropriate target
     ( *initiator_socket[target_nr] )->b_transport( trans, delay );
@@ -74,7 +74,7 @@ tlm::tlm_sync_enum Router<N_TARGETS>::nb_transport_fw(tlm::tlm_generic_payload& 
 {
     sc_dt::uint64 address = trans.get_address();
     unsigned int target_nr;
-    printf("\n");
+    //printf("\n");
     if (address < 0x1ff00000) target_nr=0;
     else {
         target_nr=1;
