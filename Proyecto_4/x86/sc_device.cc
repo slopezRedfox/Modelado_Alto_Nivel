@@ -443,7 +443,6 @@ void  Device::estimador_main(){
 
     param_1 = to_fixed_32(p1);
     cout << endl << "Estimador p1: " << p1 << endl;
-    cout << endl << "Estimador p1: " << param_1 << endl;
     std::memcpy(mem + p1_Addr, &param_1, 4);
 
     param_2 = to_fixed_32(p2);
@@ -477,7 +476,7 @@ void  Device::tb(){
     //sc_trace(wf, current, "current");
     //*/
 
-    for (int n=0; n < 1; n++){
+    for (int n=0; n < n_samples; n++){
 
         V_TB = InputVoltage(t)/22;
         I_TB = InputCurrent(t)/5;
