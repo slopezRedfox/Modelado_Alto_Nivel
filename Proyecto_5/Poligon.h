@@ -10,7 +10,7 @@ using namespace std;
 #define YSIZE 256
 #define XSIZE 256
 
-int matriz[YSIZE][XSIZE];
+extern int matriz[YSIZE][XSIZE];
 
 void Scan_Line(void);
 

@@ -1,5 +1,6 @@
 #include "Poligon.h"
 
+
 void Scan_Line(void){
     int ymax = 0, ymin = 0;
     //int* p;
