@@ -3,7 +3,8 @@
 int main(){
     ifstream inFile;
     ofstream outFile;
-    int data, xcount = 0, ycount = 0;
+    char data;
+    int xcount = 0, ycount = 0;
     int retval1 = 0, retval2 = 0;
     int resultado;
 
@@ -16,15 +17,18 @@ int main(){
     }
     // Llenado de la matriz pixeles con los datos del
     // archivo abierto
-    while(inFile >> data){
-        if(xcount < XSIZE){
-            matriz[ycount][xcount] = data;
-            xcount += 1;
-        }
-        else{
-            xcount = 0;
-            ycount += 1;
-            matriz[ycount][xcount] = data;
+    while(inFile.get(data)){
+        if(data != 10 && data != 13 ){
+            if(xcount < XSIZE){
+                matriz[ycount][xcount] = (int) data - 48;
+                xcount += 1;
+            }
+            else{
+                xcount = 0;
+                ycount += 1;
+                matriz[ycount][xcount] = (int) data - 48;
+                xcount += 1;
+            }
         }
     }
     // Cerrado del archivo con los datos originales
@@ -53,13 +57,13 @@ int main(){
     resultado = InOut_Test(181, 232);
     outFile << 232;
     outFile << setw(20) << 181;
-    outFile << setw(20) << resultado;
+    outFile << setw(19) << resultado;
     outFile << endl;
 
     resultado = InOut_Test(108, 154);
     outFile << 154;
     outFile << setw(20) << 108;
-    outFile << setw(20) << resultado;
+    outFile << setw(19) << resultado;
     outFile << endl;
 
     outFile.close();
