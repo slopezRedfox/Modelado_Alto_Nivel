@@ -1,7 +1,5 @@
 #include "Poligon.h"
 
-int matriz[256][256];
-
 void Scan_Line(void){
     int ymax = 0, ymin = 0;
     int intersec[128];
