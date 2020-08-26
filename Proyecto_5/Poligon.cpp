@@ -1,7 +1,6 @@
 #include "Poligon.h"
 
-
-int matriz[YSIZE][XSIZE];
+int matriz[256][256];
 
 void Scan_Line(void){
     int ymax = 0, ymin = 0;
@@ -31,33 +30,19 @@ void Scan_Line(void){
         }
     }
 
-   /*
-   // Funcion para rellenar el poligono desde ymax hasta ymin
-   for(int y = ymax; y <= ymin; y++){
-       flag = false;
-       for(int x = 0; x < XSIZE-1; x++){
-           if(!flag && matriz[y][x]){
-               flag = true;
-           }
-           else if(flag && matriz[y][x] && !matriz[y][x+1]){
-               flag = false;
-           }
-           else if(flag){
-               matriz[y][x] = 1;
-           }
-       }
-   }
-   */
-
+    // Iteracion desde Ymax hasta Ymin para iniciar el 
+    // rellenado del poligono
     for(int y = ymax; y <= ymin; y++){
-        count = 0;
+        count = 0;  // Variable que almacena cuantos bordes se han encontrado
+        // Bucle para determinar la cantidad de bordes y su posicion en x
         for(int x = 0; x < XSIZE-1; x++){
             if(matriz[y][x] && !matriz[y][x+1]){
-                intersec[count] = x;
                 count += 1;
+                intersec[count] = x;
             }
         }
-        for(int i = 0; i <= count; i += 2){
+        // Bucle para rellenar secciones entre bordes
+        for(int i = 1; i <= count; i += 2){
             for(int x = intersec[i]; x < intersec[i+1]; x++){
                 matriz[y][x] = 1;
             }
@@ -71,27 +56,29 @@ int InOut_Test(int x, int y){
     int resultado = 0;
     // Revisa los pixeles en la fila y
     for(int i = 0; i <= x; i++){
+        // Si encuentra un borde izquierdo, levanta el flag
+        // Y aumenta el contador
         if(!matriz[y][i-1] && matriz[y][i]){
             flag = true;
             count += 1;
         }
+        // Si encuentra un borde derecho y el flag esta levantado,
+        // aumenta el contador y baja el flag
         else if(flag && matriz[y][i] && !matriz[y][i+1]){
             flag = false;
             count += 1;
         }
     }
 
-    // Si el numero de intersecciones es par el punto esta fuera del poligono y
-    // si es impar esta dentro
     switch(count%2){
-        case 0:
+        case 0:     // Si el numero de intersecciones es par el punto esta fuera
             resultado = 0;
             break;
-        case 1:
+        case 1:     // Si el numero de intersecciones es impar el punto esta dentro
             resultado = 1;
             break;
-        default:
-            cout << "Error al realizar el test!" << endl;
+        default:    // En caso de error retorna -1
+            resultado = -1;
     }
     return resultado;
 }
