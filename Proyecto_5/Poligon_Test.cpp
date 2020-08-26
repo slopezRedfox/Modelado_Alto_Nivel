@@ -88,29 +88,28 @@ int main(){
     // Cerrado del archivo de salida
     outFile.close();
 
-    /*
+    
     // Compare the results file with the golden results
-	retval1 = system("diff --brief -w image.txt image.golden.txt");
+	retval1 = system("diff --brief -w Image_Filled.txt Image_Filled.golden.txt");
 	if (retval1 != 0){
-		printf("Test failed  !!!\n"); 
+		printf("Test Scan Line Poligon Filling failed  !!!\n"); 
 		retval1 = 1;
 	}
     else{
-		printf("Test passed !\n");
+		printf("Test Scan Line Poligon Filling passed !\n");
     }
-    */
+    
 
-    /*
+    
     // Compare the results file with the golden results
-	retval1 = system("diff --brief -w test.txt test.golden.txt");
-	if (retval1 != 0){
-		printf("Test failed  !!!\n"); 
-		retval1 = 1;
+	retval2 = system("diff --brief -w InOut_Test.txt InOut_Test.golden.txt");
+	if (retval2 != 0){
+		printf("Inside Outside Test Even Odd Rule failed  !!!\n"); 
+		retval2 = 1;
 	}
     else{
-		printf("Test passed !\n");
+		printf("Inside Outside Test Even Odd Rule passed !\n");
     }
-    */
 
     return (retval1 + retval2);
 }
