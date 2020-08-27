@@ -7,95 +7,113 @@
 #define YSIZE 256
 #define XSIZE 256
 
-void input_matrix(int x, int y, int value){
-	int matrix[XSIZE][YSIZE] = {0};
-	matrix[x][y] = value;
-	
+static int result = 0;
+static int value = 0;
+static int flag = 0;
+static int in_matriz[256][256]  = {{0},{0}};
+static int out_matriz[256][256]  = {{0},{0}};
+
+int poligon_filling(int pixel_x, int pixel_y, int result, int in_x, int in_y, int in_value, int out_x, int out_y, int out_value);
+int wrapper_poligon(int pixel_x, int pixel_y, int result, int in_x, int in_y, int in_value, int out_x, int out_y, int out_value);
+
+template<typename T>
+void input_matrix(T x, T y, T value){
+	in_matriz[y][x] = value;
+}
+/*
+template<typename T>
+void print_matriz(){
+	T test =0;
+	for(int y = 0; y < 256; y ++){
+			for(int x = 0; x < 256; x ++){
+				std::cout<<out_matriz[y][x]<<" ";
+			}
+			std::cout<<std::endl;
+		}
+}
+*/
+
+
+template<typename T>
+int output_matrix(T y, T x){
+	value = out_matriz[y][x];
+	return value;
+	}
+
+template<typename T>
+void Scan_Line(){
+		T ymax = 0, ymin = 0;
+		T intersec[128];
+		T count;
+		bool flag = false;
+		// Loop para encontrar Ymax y Ymin
+			for(int y = 0; y < 256; y++){
+				for(int x = 0; x < 256; x++){
+					if(in_matriz[y][x] == 1){
+					}
+					// Cuando encuentra el primer pixel con valor 1
+					// almacena el valor de y en ymax
+					if(!flag&&in_matriz[y][x]){
+						ymax = y;
+						flag = true;
+						break;
+					}
+					// Almacena los valores de y siguientes en ymin
+					// por lo que al llegar al final el valor de y
+					// sera ymin
+					else if(in_matriz[y][x]){
+						ymin = y;
+						break;
+					}
+				}
+			}
+
+	   // Funcion para rellenar el poligono desde ymax hasta ymin
+		for(int y = ymax; y <= ymin; y++){
+				count = 0;
+				for(int x = 0; x < 256-1; x++){
+					if(in_matriz[y][x] && !in_matriz[y][x+1]){
+						count += 1;
+						intersec[count] = x;
+
+					}
+				}
+				for(int i = 1; i <= count; i += 2){
+					for(int x = intersec[i]; x < intersec[i+1]; x++){
+						out_matriz[y][x] = 1;
+					}
+				}
+		}
 }
 
-void Scan_Line(int matriz[YSIZE][XSIZE]){
-    int ymax = 0, ymin = 0;
-    int* p;
-    int count;
-    bool flag;
+template<typename T>
+int InOut_Test(T x, T y){
+		bool flag = false;
+		int count = 0;
+		// Revisa los pixeles en la fila y
+		for(int i = 0; i <= x; i++){
+				if(!in_matriz[y][i-1] && in_matriz[y][i]){
+					flag = true;
+					count += 1;
+				}
+				else if(flag && in_matriz[y][i] && !in_matriz[y][i+1]){
+					flag = false;
+					count += 1;
+				}
+			}
 
-    // Loop para encontrar Ymax y Ymin
-    for(int y = 0; y < YSIZE; y++){
-        flag = false;
-        for(int x = 0; x < XSIZE; x++){
-            // Cuando encuentra el primer pixel con valor 1
-            // almacena el valor de y en ymax
-            if(!flag&&matriz[y][x]){
-                ymax = y;
-                flag = true;
-                break;
-            }
-            // Almacena los valores de y siguientes en ymin
-            // por lo que al llegar al final el valor de y
-            // sera ymin
-            else if(matriz[y][x]){
-                ymin = y;
-                break;
-            }
-        }
-    }
-
-    // Solo es necesario trabajar desde Ymax hasta Ymin
-    for(int y = ymax; y <= ymin; y++){
-        count = 0;
-        // Aqui se asegura de almacenar las intersecciones 
-        // en orden ascendente de x
-        for(int x = 0; x < XSIZE; x++){
-            if(matriz[y][x]){
-                p[count] = x;
-                count += 1;
-            }
-        }
-        // Una vez se tienen almacenadas las intercecciones
-        // se empieza a rellenar el poligono
-        for(int i = 0; i <= count; i++){
-            // Cuando count es impar significa que es un borde donde la izquierda
-            // es interno y la derecha es externo
-            if(!(count%2)){
-                // Se rellena por lo tanto desde el borde anterior hasta el borde
-                // actual, que corresponde el interior del poligono
-                for(int x = p[count-1]; x <= p[count]; x++){
-                    matriz[y][x] = 1;
-                }
-            }
-        }
-    }
-}
-
-void InOut_Test(int matriz[YSIZE][XSIZE], int x, int y){
-    bool flag = false;
-    int count = 0;
-    // Revisa los pixeles en la fila y
-    for(int i = 0; i <= x; i++){
-        // Si el flag es false, significa que esta fuera del poligono al
-        // encontrar un pixel de valor 1 aumenta la cuenta de intersecciones
-        if(!flag&&matriz[y][i]){
-            count += 1;
-            flag = true;
-        }
-        // Si el pixel actual es 0 y el pixel anterior es 1, entonces el punto
-        // anterior es una interseccion por lo que la cuenta aumenta en 1
-        else if(!matriz[y][i]&&matriz[y][i-1]){
-            count += 1;
-            flag = false;
-        }
-    }
-
-    // Si el numero de intersecciones es par el punto esta fuera del poligono y
-    // si es impar esta dentro
-    switch(count%2){
-        case 0:
-            //std::cout << "El punto esta afuera del poligono" << std::endl;
-            break;
-        case 1:
-        	//std::cout << "El punto esta dentro del poligono" << std::endl;
-            break;
-        default:
-        	//std::cout << "Error al realizar el test!" << std::endl;
-    }
-}
+		// Si el numero de intersecciones es par el punto esta fuera del poligono y
+		// si es impar esta dentro
+		switch(count%2){
+			case 0:
+				result = 0;
+				break;
+			case 1:
+				result = 1;
+				break;
+			default:
+				result = -1;
+				//cout << "Error al realizar el test!" << endl;
+		}
+		return result;
+};
